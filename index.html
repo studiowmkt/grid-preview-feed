@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grid Preview do Feed</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #fafafa; color: #262626; }
+    .container { max-width: 480px; margin: 0 auto; padding: 12px; }
+    .header { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; margin-bottom: 8px; border-bottom: 1px solid #efefef; }
+    .header-left { display: flex; align-items: center; gap: 10px; }
+    .profile-pic { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px; }
+    .profile-name { font-weight: 600; font-size: 14px; }
+    .btn-refresh { display: flex; align-items: center; gap: 6px; padding: 6px 14px; background: #0095f6; color: white; border: none; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    .btn-refresh:hover { background: #1877f2; }
+    .btn-refresh:disabled { background: #b2dffc; cursor: wait; }
+    .btn-refresh svg { width: 14px; height: 14px; fill: white; }
+    .btn-refresh.spinning svg { animation: spin 0.8s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .stats { display: flex; justify-content: center; gap: 32px; padding: 8px 0 12px; font-size: 13px; color: #8e8e8e; }
+    .stats span strong { color: #262626; font-weight: 600; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
+    .grid-item { position: relative; aspect-ratio: 1; overflow: hidden; background: #efefef; cursor: pointer; }
+    .grid-item img { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.2s; }
+    .grid-item:hover img { opacity: 0.85; }
+    .grid-item .overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.3); display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; padding: 8px; }
+    .grid-item:hover .overlay { opacity: 1; }
+    .overlay .date { color: white; font-size: 11px; font-weight: 600; background: rgba(0,0,0,0.5); padding: 3px 8px; border-radius: 4px; }
+    .overlay .format-badge { color: white; font-size: 10px; margin-top: 4px; background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 3px; }
+    .grid-item .carousel-icon, .grid-item .video-icon { position: absolute; top: 6px; right: 6px; }
+    .grid-item .carousel-icon svg, .grid-item .video-icon svg { width: 16px; height: 16px; fill: white; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
+    .empty-state { text-align: center; padding: 60px 20px; color: #8e8e8e; }
+    .empty-state svg { width: 48px; height: 48px; fill: #c7c7c7; margin-bottom: 16px; }
+    .empty-state h3 { font-size: 16px; color: #262626; margin-bottom: 8px; }
+    .empty-state p { font-size: 13px; line-height: 1.5; }
+    .loading { text-align: center; padding: 60px 20px; }
+    .loading-spinner { width: 32px; height: 32px; border: 3px solid #efefef; border-top-color: #0095f6; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+    .loading p { color: #8e8e8e; font-size: 13px; }
+    .error-state { text-align: center; padding: 40px 20px; color: #ed4956; }
+    .error-state p { font-size: 13px; margin-bottom: 12px; }
+    .footer { text-align: center; padding: 12px; font-size: 11px; color: #c7c7c7; border-top: 1px solid #efefef; margin-top: 8px; }
+    .grid-item.placeholder { background: #f5f5f5; display: flex; align-items: center; justify-content: center; }
+    .grid-item.placeholder svg { width: 24px; height: 24px; fill: #dbdbdb; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-left">
+        <div class="profile-pic" id="profilePic">B</div>
+        <span class="profile-name" id="profileName">Carregando...</span>
+      </div>
+      <button class="btn-refresh" id="btnRefresh" onclick="loadGrid()">
+        <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+        <span>Atualizar Grid</span>
+      </button>
+    </div>
+    <div class="stats" id="stats" style="display:none;">
+      <span><strong id="totalPosts">0</strong> posts</span>
+      <span><strong id="totalApproved">0</strong> aprovados</span>
+    </div>
+    <div id="content">
+      <div class="loading">
+        <div class="loading-spinner"></div>
+        <p>Carregando preview do feed...</p>
+      </div>
+    </div>
+    <div class="footer">Grid Preview do Feed &bull; Studio W</div>
+  </div>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const CLIENT_NAME = params.get('client') || 'bonfimhotel.silvania';
+    const CLIENT_DISPLAY = params.get('display') || '@bonfimhotel.silvania';
+    document.getElementById('profileName').textContent = CLIENT_DISPLAY;
+    document.getElementById('profilePic').textContent = CLIENT_DISPLAY.charAt(1).toUpperCase();
+    async function loadGrid() {
+      const btn = document.getElementById('btnRefresh');
+      const content = document.getElementById('content');
+      const stats = document.getElementById('stats');
+      btn.disabled = true;
+      btn.classList.add('spinning');
+      content.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Carregando preview do feed...</p></div>';
+      try {
+        const response = await fetch('/api/grid?client=' + encodeURIComponent(CLIENT_NAME));
+        if (!response.ok) throw new Error('Erro ' + response.status);
+        const data = await response.json();
+        if (!data.posts || data.posts.length === 0) {
+          content.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg><h3>Nenhuma imagem encontrada</h3><p>Adicione imagens na propriedade <strong>PREVIEW FEED</strong> dos posts aprovados.</p></div>';
+          stats.style.display = 'none';
+          return;
+        }
+        document.getElementById('totalPosts').textContent = data.total || data.posts.length;
+        document.getElementById('totalApproved').textContent = data.posts.length;
+        stats.style.display = 'flex';
+        let gridHTML = '<div class="grid">';
+        data.posts.forEach(post => {
+          const fmt = post.formato;
+          const icon = fmt === 'CARROSSEL' ? '<div class="carousel-icon"><svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg></div>' : fmt === 'VIDEO' ? '<div class="video-icon"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>' : '';
+          let dateStr = '';
+          try { if (post.data_entrega) { const d = new Date(post.data_entrega + 'T00:00:00'); dateStr = d.toLocaleDateString('pt-BR', {day:'2-digit',month:'short'}); } } catch(e) {}
+          gridHTML += '<div class="grid-item"><img src="' + post.image_url + '" alt="" loading="lazy" />' + icon + '<div class="overlay">' + (dateStr ? '<span class="date">' + dateStr + '</span>' : '') + (fmt ? '<span class="format-badge">' + fmt + '</span>' : '') + '</div></div>';
+        });
+        const rem = data.posts.length % 3;
+        if (rem > 0) for (let i = 0; i < 3 - rem; i++) gridHTML += '<div class="grid-item placeholder"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></div>';
+        gridHTML += '</div>';
+        content.innerHTML = gridHTML;
+      } catch (error) {
+        content.innerHTML = '<div class="error-state"><p>' + error.message + '</p><button class="btn-refresh" onclick="loadGrid()"><span>Tentar novamente</span></button></div>';
+        stats.style.display = 'none';
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove('spinning');
+      }
+    }
+    loadGrid();
+  </script>
+</body>
+</html>

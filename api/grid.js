@@ -18,7 +18,6 @@ export default async function handler(req, res) {
   try {
     const clientPageId = req.query.client_page_id || process.env.CLIENT_PAGE_ID || '';
 
-    // fetch client info (CLIENTES STUDIO W database)
     let clientInfo = { nome: '', foto_url: '', arroba: '' };
     if (clientPageId) {
       try {
@@ -40,16 +39,14 @@ export default async function handler(req, res) {
       } catch (_) { /* non-fatal */ }
     }
 
-    // LINHA DE PRODUCAO is status type; CLIENTES SW is relation name; DATA DE ENTREGA CLIENTE is date
     const statusFilter = {
       or: [
-        { property: 'LINHA DE PRODUÇÃO', status: { equals: 'APROVADO' } },
-        { property: 'LINHA DE PRODUÇÃO', status: { equals: 'AGENDADO' } },
-        { property: 'LINHA DE PRODUÇÃO', status: { equals: 'ENTREGUE' } }
+        { property: 'LINHA DE PRODU\u00c7\u00c3O', status: { equals: 'APROVADO' } },
+        { property: 'LINHA DE PRODU\u00c7\u00c3O', status: { equals: 'AGENDADO' } },
+        { property: 'LINHA DE PRODU\u00c7\u00c3O', status: { equals: 'ENTREGUE' } }
       ]
     };
 
-    // PREVIEW FEED is a URL field (single URL per post)
     const previewFilter = { property: 'PREVIEW FEED', url: { is_not_empty: true } };
 
     const filter = clientPageId
@@ -61,7 +58,7 @@ export default async function handler(req, res) {
       : { and: [ previewFilter, statusFilter ] };
 
     const body = {
-      sorts:     [{ property: 'DATA DE ENTREGA CLIENTE', direction: 'descending' }],
+      sorts: [{ property: 'DATA DE ENTREGA CLIENTE', direction: 'descending' }],
       filter,
       page_size: 100
     };
@@ -81,8 +78,6 @@ export default async function handler(req, res) {
 
     const posts = data.results.map(page => {
       const p = page.properties;
-
-      // PREVIEW FEED is URL type
       const rawUrl = p['PREVIEW FEED']?.url || '';
       let image_url = '';
       let embed_url = '';
@@ -90,13 +85,9 @@ export default async function handler(req, res) {
       if (rawUrl) {
         const driveId = driveFileId(rawUrl);
         if (driveId) {
-          const isVideo = /\.(mp4|mov|webm)/i.test(rawUrl);
-          if (isVideo) {
-            image_url = `https://drive.google.com/thumbnail?id=${driveId}&sz=w480`;
-            embed_url = `https://drive.google.com/file/d/${driveId}/preview`;
-          } else {
-            image_url = `https://drive.google.com/uc?export=view&id=${driveId}`;
-          }
+          // thumbnail works for both images and videos with no CORS issues
+          image_url = `https://drive.google.com/thumbnail?id=${driveId}&sz=w640`;
+          embed_url = `https://drive.google.com/file/d/${driveId}/preview`;
         } else {
           image_url = rawUrl;
         }
@@ -107,7 +98,7 @@ export default async function handler(req, res) {
         notion_url:     page.url,
         nome:           p['Nome']?.title?.[0]?.plain_text || '',
         data_entrega:   p['DATA DE ENTREGA CLIENTE']?.date?.start || '',
-        linha_producao: p['LINHA DE PRODUÇÃO']?.status?.name || '',
+        linha_producao: p['LINHA DE PRODU\u00c7\u00c3O']?.status?.name || '',
         formato:        p['Formato']?.select?.name || '',
         pilar:          p['PILAR']?.select?.name || '',
         image_url,

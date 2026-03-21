@@ -67,15 +67,23 @@ export default async function handler(req, res) {
   // ── main ─────────────────────────────────────────────────────────────────
 
   // Busca info do cliente pelo ID de página (CLIENTES STUDIO W)
-  async function fetchClientInfo(pageId) {
+  async function fetchClientInfo(pageId, debugMode = false) {
     const info = { nome: '', foto_url: '', arroba: '' };
+    let _dbg = {};
     try {
       const cr = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
         headers: { 'Authorization': `Bearer ${NOTION_TOKEN}`, 'Notion-Version': '2022-06-28' }
       });
-      if (!cr.ok) return info;
+      _dbg.http_status = cr.status;
+      if (!cr.ok) {
+        const errBody = await cr.json().catch(() => ({}));
+        _dbg.notion_error = errBody;
+        if (debugMode) info._fetch_debug = _dbg;
+        return info;
+      }
       const cd = await cr.json();
       const p  = cd.properties;
+      _dbg.properties_keys = Object.keys(p || {});
       info.nome = p['Nome']?.title?.[0]?.plain_text || '';
       const fotoFiles = p['FOTO DE PERFIL']?.files;
       if (fotoFiles?.length > 0) {
@@ -84,7 +92,11 @@ export default async function handler(req, res) {
       }
       const handleArr = p['HANDLE']?.rich_text;
       if (handleArr?.length > 0) info.arroba = handleArr.map(t => t.plain_text).join('');
-    } catch (_) { /* non-fatal */ }
+      if (debugMode) info._fetch_debug = _dbg;
+    } catch (e) {
+      _dbg.exception = e.message;
+      if (debugMode) info._fetch_debug = _dbg;
+    }
     return info;
   }
 
@@ -94,7 +106,7 @@ export default async function handler(req, res) {
 
     // Busca info do cliente se ID explícito fornecido
     if (clientPageId) {
-      clientInfo = await fetchClientInfo(clientPageId);
+      clientInfo = await fetchClientInfo(clientPageId, debug);
     }
 
     // Filtros
@@ -212,9 +224,10 @@ export default async function handler(req, res) {
 
     // Auto-detect cliente: se não veio client_page_id mas posts existem,
     // pega o cliente da relação do primeiro post automaticamente
+    let autoDetectedId = null;
     if (!clientPageId && posts.length > 0) {
-      const autoId = results[0]?.properties['CLIENTES SW']?.relation?.[0]?.id;
-      if (autoId) clientInfo = await fetchClientInfo(autoId);
+      autoDetectedId = results[0]?.properties['CLIENTES SW']?.relation?.[0]?.id;
+      if (autoDetectedId) clientInfo = await fetchClientInfo(autoDetectedId, debug);
     }
 
     return res.status(200).json({
@@ -226,6 +239,7 @@ export default async function handler(req, res) {
       ...(debug ? {
         _debug_mode: true,
         _google_key: GOOGLE_KEY ? 'configurada ✓' : 'NÃO configurada (usando fallback HTML)',
+        _client_page_id_used: clientPageId || autoDetectedId || '(nenhum)',
         _hint: 'Use ?debug=1 para diagnóstico. Use ?debug=1&client_page_id=ID para filtrar por cliente.'
       } : {})
     });

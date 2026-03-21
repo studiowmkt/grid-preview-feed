@@ -146,6 +146,10 @@ body {
 .preview-btn svg { width: 14px; height: 14px; fill: #fff; }
 .grid-item:hover .preview-btn { opacity: 1; }
 .preview-btn:hover { background: rgba(0,0,0,.78); }
+@media (hover: none) {
+  .preview-btn { opacity: 1; }
+  .grid-overlay { opacity: 1; }
+}
 
 /* Placeholder cells */
 .grid-item.ph { cursor: default; background: #f5f5f5; display: flex; align-items: center; justify-content: center; }
@@ -326,6 +330,13 @@ body {
 
 <script>
 /* ── navegação ────────────────────────────────── */
+function gridClick(i) {
+  if ('ontouchstart' in window || window.matchMedia('(hover:none)').matches) {
+    openModal(i);
+  } else {
+    goNotion(i);
+  }
+}
 function goNotion(i) {
   const p = POSTS[i];
   if (p && p.notion_url) window.open(p.notion_url, '_blank', 'noopener');
@@ -428,7 +439,7 @@ function renderGrid() {
     const carr = isCarr(p);
     const bc   = p.linha_producao ? `badge-st b-${p.linha_producao}` : '';
     const notionHref = esc(p.notion_url || '#');
-    html += `<div class="grid-item" data-i="${i}" onclick="goNotion(${i})" title="Abrir no Notion">`;
+    html += `<div class="grid-item" data-i="${i}" onclick="gridClick(${i})" title="Ver post">`;
     html += `<img class="thumb" src="${esc(p.image_url)}" alt="" loading="lazy" onerror="this.style.opacity='.15'">`;
     if (bc) html += `<span class="${bc}">${p.linha_producao}</span>`;
     if (vid)  html += `<div class="fmt-icon"><svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg></div>`;

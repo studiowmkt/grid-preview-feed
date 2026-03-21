@@ -388,6 +388,7 @@ async function loadGrid() {
   btn.disabled = true; btn.classList.add('spinning');
   content.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Carregando preview do feed...</p></div>';
   try {
+    const url = CLIENT_ID ? '/api/grid?client_page_id='+encodeURIComponent(CLIENT_ID) : '/api/grid';
     const res = await fetch(url);
     if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.message||e.error||'Erro '+res.status); }
     const data = await res.json();

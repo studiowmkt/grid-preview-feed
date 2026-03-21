@@ -527,7 +527,16 @@ if (DISPLAY) {
   document.getElementById('profileName').textContent = DISPLAY;
   document.getElementById('profilePic').textContent  = DISPLAY.replace('@','')[0]?.toUpperCase()||'S';
 }
-loadGrid();
+// Segurança: dados só carregam dentro do embed (Notion iframe)
+// Acesso direto no browser não exibe dados do cliente
+const inIframe = window.self !== window.top;
+const isDebug  = P.get('debug') === '1';
+if (inIframe || isDebug || !CLIENT_ID) {
+  loadGrid();
+} else {
+  document.getElementById('profileName').textContent = 'Preview do Feed';
+  document.getElementById('content').innerHTML = '';
+}
 </script>
 </body>
 </html>

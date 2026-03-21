@@ -534,8 +534,18 @@ const isDebug  = P.get('debug') === '1';
 if (inIframe || isDebug || !CLIENT_ID) {
   loadGrid();
 } else {
-  document.getElementById('profileName').textContent = 'Preview do Feed';
+  document.getElementById('profileName').textContent = 'PREVIEW DO FEED';
+  const _pic = document.getElementById('profilePic');
+  _pic.style.background = 'none';
+  _pic.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="width:100%;height:100%;border-radius:50%;display:block;"><rect width="100" height="100" fill="#0057B8"/><text x="50" y="64" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="40" fill="white" text-anchor="middle">SW.</text></svg>';
+  document.getElementById('btnRefresh').style.display = 'none';
   document.getElementById('content').innerHTML = '';
+}
+
+function tryLoadGrid() {
+  const _inI = (function(){try{return window.self!==window.top}catch(e){return true}})();
+  const _dbg = new URLSearchParams(location.search).get('debug')==='1';
+  if (_inI || _dbg || !CLIENT_ID) loadGrid();
 }
 </script>
 </body>

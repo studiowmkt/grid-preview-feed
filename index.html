@@ -345,7 +345,6 @@ function goNotion(i) {
 const P = new URLSearchParams(location.search);
 const CLIENT_ID  = P.get('client_page_id') || '';
 const DISPLAY = P.get('display') || '';
-const TOKEN  = P.get('token')   || '';
 let POSTS = [];
 let CAR   = { imgs: [], idx: 0 };
 
@@ -389,8 +388,6 @@ async function loadGrid() {
   btn.disabled = true; btn.classList.add('spinning');
   content.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Carregando preview do feed...</p></div>';
   try {
-    const tkP = TOKEN ? '&token='+encodeURIComponent(TOKEN) : '';
-    const url = CLIENT_ID ? '/api/grid?client_page_id='+encodeURIComponent(CLIENT_ID)+tkP : '/api/grid'+(tkP?tkP.replace('&','?'):'');
     const res = await fetch(url);
     if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.message||e.error||'Erro '+res.status); }
     const data = await res.json();
@@ -424,9 +421,6 @@ async function loadGrid() {
     stats.style.display = 'flex';
     renderGrid();
   } catch(err) {
-    const is403 = err.message && (err.message.includes('ão') || err.message.includes('nválido'));
-      content.innerHTML = is403
-        ? `<div class="error-state"><svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg><p style="font-weight:600;font-size:14px;color:#262626">Acesso não autorizado</p><p style="margin-top:6px;color:#555">Este link não é válido ou expirou.<br>Solicite um novo link à Studio W.</p></div>`
         : `<div class="error-state"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg><p>${esc(err.message)}</p><button class="btn-refresh" onclick="loadGrid()"><span>Tentar novamente</span></button></div>`;
     stats.style.display = 'none';
   } finally { btn.disabled = false; btn.classList.remove('spinning'); }

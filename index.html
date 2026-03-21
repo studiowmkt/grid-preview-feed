@@ -343,7 +343,13 @@ function goNotion(i) {
 }
 
 const P = new URLSearchParams(location.search);
-const CLIENT_ID  = P.get('client_page_id') || '';
+let CLIENT_ID  = P.get('client_page_id') || '';
+// Auto-detectar ID da página Notion via document.referrer (template dinâmico)
+// Quando o embed é incorporado sem parâmetro, lê o ID da página mãe automaticamente
+if (!CLIENT_ID && document.referrer) {
+  const _rm = document.referrer.match(/([a-f0-9]{32})(?:[?#]|$)/i);
+  if (_rm) CLIENT_ID = _rm[1];
+}
 const DISPLAY = P.get('display') || '';
 let POSTS = [];
 let CAR   = { imgs: [], idx: 0 };

@@ -158,25 +158,38 @@ export default async function handler(req, res) {
         }
       }
 
-      // 2. Fall back to PREVIEW FEED (attached file)
-      if (!image_url) {
-        const files = p['PREVIEW FEED']?.files || [];
-        if (files.length > 0) {
-          const f = files[0];
-          image_url = f.type === 'file' ? f.file.url : (f.external?.url || '');
-        }
+      // 2. Collect ALL files from PREVIEW FEED (for carousel support)
+      const allFiles   = p['PREVIEW FEED']?.files || [];
+      const fileImages = allFiles
+        .map(f => f.type === 'file' ? f.file.url : (f.external?.url || ''))
+        .filter(Boolean);
+
+      // If no image_url from PREVIEW URL, use first file
+      if (!image_url && fileImages.length > 0) {
+        image_url = fileImages[0];
+      }
+
+      // Build images[] for carousel: Drive/URL image first, then all files
+      let images = [];
+      if (image_url && !fileImages.includes(image_url)) {
+        images = [image_url, ...fileImages];
+      } else if (fileImages.length > 0) {
+        images = fileImages;
+      } else if (image_url) {
+        images = [image_url];
       }
 
       return {
-        id:               page.id,
-        notion_url:       page.url,
-        nome:             p['Nome do Post']?.title?.[0]?.plain_text || p['Name']?.title?.[0]?.plain_text || '',
-        data_entrega:     p['Data de Entrega']?.date?.start || '',
-        linha_producao:   p['Linha de ProduÃ§Ã£o']?.select?.name || '',
-        formato:          p['Formato']?.select?.name || '',
-        pilar:            p['Pilar']?.select?.name || '',
+        id:             page.id,
+        notion_url:     page.url,
+        nome:           p['Nome do Post']?.title?.[0]?.plain_text || p['Name']?.title?.[0]?.plain_text || '',
+        data_entrega:   p['Data de Entrega']?.date?.start || '',
+        linha_producao: p['Linha de ProduÃ§Ã£o']?.select?.name || '',
+        formato:        p['Formato']?.select?.name || '',
+        pilar:          p['Pilar']?.select?.name || '',
         image_url,
-        embed_url
+        embed_url,
+        images
       };
     }).filter(p => p.image_url);
 

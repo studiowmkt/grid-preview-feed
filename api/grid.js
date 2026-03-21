@@ -6,13 +6,25 @@ export default async function handler(req, res) {
 
   const NOTION_TOKEN = process.env.NOTION_TOKEN;
   const DATABASE_ID  = process.env.NOTION_DATABASE_ID || '1880d359-56f6-81c5-83f6-f889201c49e9';
-
   if (!NOTION_TOKEN) return res.status(500).json({ error: 'NOTION_TOKEN nao configurado' });
 
   function driveFileId(url) {
-    if (!url || !url.includes('drive.google.com')) return null;
-    const m = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-    return m ? m[1] : null;
+    if (!url) return null;
+    // file/d/FILEID pattern
+    const m1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (m1) return m1[1];
+    // ?id=FILEID or &id=FILEID pattern
+    const m2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (m2) return m2[1];
+    return null;
+  }
+
+  function isValidPreviewUrl(url) {
+    // Must be a real HTTP(S) URL — reject plain filenames, folder URLs, etc.
+    if (!url || !url.startsWith('http')) return false;
+    // Reject Drive folder URLs (no per-file thumbnail available)
+    if (url.includes('drive.google.com/drive/folders/')) return false;
+    return true;
   }
 
   try {
@@ -46,16 +58,11 @@ export default async function handler(req, res) {
         { property: 'LINHA DE PRODU\u00c7\u00c3O', status: { equals: 'ENTREGUE' } }
       ]
     };
-
     const previewFilter = { property: 'PREVIEW FEED', url: { is_not_empty: true } };
 
     const filter = clientPageId
-      ? { and: [
-            { property: 'CLIENTES SW', relation: { contains: clientPageId } },
-            previewFilter,
-            statusFilter
-          ] }
-      : { and: [ previewFilter, statusFilter ] };
+      ? { and: [{ property: 'CLIENTES SW', relation: { contains: clientPageId } }, previewFilter, statusFilter] }
+      : { and: [previewFilter, statusFilter] };
 
     const body = {
       sorts: [{ property: 'DATA DE ENTREGA CLIENTE', direction: 'descending' }],
@@ -82,10 +89,10 @@ export default async function handler(req, res) {
       let image_url = '';
       let embed_url = '';
 
-      if (rawUrl) {
+      if (isValidPreviewUrl(rawUrl)) {
         const driveId = driveFileId(rawUrl);
         if (driveId) {
-          // thumbnail works for both images and videos with no CORS issues
+          // Use thumbnail API — works for images and videos, no CORS issues
           image_url = `https://drive.google.com/thumbnail?id=${driveId}&sz=w640`;
           embed_url = `https://drive.google.com/file/d/${driveId}/preview`;
         } else {
@@ -105,7 +112,7 @@ export default async function handler(req, res) {
         embed_url,
         images: image_url ? [image_url] : []
       };
-    }).filter(p => p.image_url);
+    }).filter(p => p.image_url); // only posts with a valid renderable URL
 
     return res.status(200).json({
       posts,

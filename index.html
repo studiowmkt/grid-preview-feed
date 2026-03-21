@@ -6,41 +6,370 @@
   <title>Grid Preview do Feed</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #fafafa; color: #262626; }
-    .container { max-width: 480px; margin: 0 auto; padding: 12px; }
-    .header { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; margin-bottom: 8px; border-bottom: 1px solid #efefef; }
-    .header-left { display: flex; align-items: center; gap: 10px; }
-    .profile-pic { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #fafafa;
+      color: #262626;
+    }
+
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 12px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      margin-bottom: 8px;
+      border-bottom: 1px solid #efefef;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .profile-pic {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
     .profile-name { font-weight: 600; font-size: 14px; }
-    .btn-refresh { display: flex; align-items: center; gap: 6px; padding: 6px 14px; background: #0095f6; color: white; border: none; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+
+    .btn-refresh {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: #0095f6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+
     .btn-refresh:hover { background: #1877f2; }
     .btn-refresh:disabled { background: #b2dffc; cursor: wait; }
     .btn-refresh svg { width: 14px; height: 14px; fill: white; }
     .btn-refresh.spinning svg { animation: spin 0.8s linear infinite; }
-    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    .stats { display: flex; justify-content: center; gap: 32px; padding: 8px 0 12px; font-size: 13px; color: #8e8e8e; }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      padding: 8px 0 12px;
+      font-size: 12px;
+      color: #8e8e8e;
+    }
+
     .stats span strong { color: #262626; font-weight: 600; }
-    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
-    .grid-item { position: relative; aspect-ratio: 1; overflow: hidden; background: #efefef; cursor: pointer; }
-    .grid-item img { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.2s; }
-    .grid-item:hover img { opacity: 0.85; }
-    .grid-item .overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.3); display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; padding: 8px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3px;
+    }
+
+    .grid-item {
+      position: relative;
+      aspect-ratio: 1;
+      overflow: hidden;
+      background: #efefef;
+      cursor: pointer;
+    }
+
+    .grid-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.2s, opacity 0.2s;
+      display: block;
+    }
+
+    .grid-item:hover img {
+      transform: scale(1.04);
+      opacity: 0.82;
+    }
+
+    .grid-item .overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 60%);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: flex-end;
+      opacity: 0;
+      transition: opacity 0.2s;
+      padding: 8px;
+      gap: 3px;
+    }
+
     .grid-item:hover .overlay { opacity: 1; }
-    .overlay .date { color: white; font-size: 11px; font-weight: 600; background: rgba(0,0,0,0.5); padding: 3px 8px; border-radius: 4px; }
-    .overlay .format-badge { color: white; font-size: 10px; margin-top: 4px; background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 3px; }
-    .grid-item .carousel-icon, .grid-item .video-icon { position: absolute; top: 6px; right: 6px; }
-    .grid-item .carousel-icon svg, .grid-item .video-icon svg { width: 16px; height: 16px; fill: white; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
+
+    .overlay .post-name {
+      color: white;
+      font-size: 10px;
+      font-weight: 600;
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .overlay .date { color: rgba(255,255,255,0.8); font-size: 9px; }
+
+    .status-badge {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      pointer-events: none;
+    }
+
+    .status-APROVADO { background: #d4edda; color: #155724; }
+    .status-AGENDADO { background: #cce5ff; color: #004085; }
+    .status-ENTREGUE { background: #e2e3e5; color: #383d41; }
+
+    .format-icon {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      pointer-events: none;
+    }
+
+    .format-icon svg {
+      width: 16px;
+      height: 16px;
+      fill: white;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6));
+    }
+
+    .video-play {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .video-play svg {
+      width: 34px;
+      height: 34px;
+      fill: white;
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.7));
+      opacity: 0.9;
+    }
+
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.78);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      animation: fadeIn 0.15s ease;
+    }
+
+    .modal-backdrop.open { display: flex; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    .modal {
+      background: white;
+      border-radius: 14px;
+      overflow: hidden;
+      max-width: 440px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      max-height: 90vh;
+      animation: slideUp 0.2s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(18px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+
+    .modal-media {
+      position: relative;
+      background: #111;
+      width: 100%;
+      aspect-ratio: 1;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .modal-media img,
+    .modal-media video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 30px;
+      height: 30px;
+      background: rgba(0,0,0,0.5);
+      border: none;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    .modal-close svg { width: 16px; height: 16px; fill: white; }
+
+    .modal-info {
+      padding: 16px;
+      overflow-y: auto;
+    }
+
+    .modal-title {
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.45;
+      color: #262626;
+      margin-bottom: 10px;
+    }
+
+    .modal-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .badge-APROVADO { background: #d4edda; color: #155724; }
+    .badge-AGENDADO { background: #cce5ff; color: #004085; }
+    .badge-ENTREGUE { background: #e2e3e5; color: #383d41; }
+    .badge-format   { background: #f0f0f0; color: #555; }
+
+    .modal-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 12px;
+      color: #8e8e8e;
+      margin-bottom: 14px;
+    }
+
+    .modal-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .modal-meta-row svg { width: 14px; height: 14px; fill: #bbb; flex-shrink: 0; }
+    .modal-meta-row strong { color: #444; font-weight: 500; }
+
+    .btn-notion {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 10px;
+      background: #262626;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+
+    .btn-notion:hover { background: #3d3d3d; }
+    .btn-notion svg { width: 16px; height: 16px; fill: white; }
+
     .empty-state { text-align: center; padding: 60px 20px; color: #8e8e8e; }
     .empty-state svg { width: 48px; height: 48px; fill: #c7c7c7; margin-bottom: 16px; }
-    .empty-state h3 { font-size: 16px; color: #262626; margin-bottom: 8px; }
-    .empty-state p { font-size: 13px; line-height: 1.5; }
+    .empty-state h3 { font-size: 15px; color: #262626; margin-bottom: 8px; }
+    .empty-state p  { font-size: 12px; line-height: 1.6; }
+
     .loading { text-align: center; padding: 60px 20px; }
-    .loading-spinner { width: 32px; height: 32px; border: 3px solid #efefef; border-top-color: #0095f6; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+    .loading-spinner {
+      width: 32px; height: 32px;
+      border: 3px solid #efefef;
+      border-top-color: #0095f6;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
     .loading p { color: #8e8e8e; font-size: 13px; }
+
     .error-state { text-align: center; padding: 40px 20px; color: #ed4956; }
     .error-state p { font-size: 13px; margin-bottom: 12px; }
-    .footer { text-align: center; padding: 12px; font-size: 11px; color: #c7c7c7; border-top: 1px solid #efefef; margin-top: 8px; }
-    .grid-item.placeholder { background: #f5f5f5; display: flex; align-items: center; justify-content: center; }
+
+    .footer {
+      text-align: center;
+      padding: 12px;
+      font-size: 11px;
+      color: #c7c7c7;
+      border-top: 1px solid #efefef;
+      margin-top: 8px;
+    }
+
+    .grid-item.placeholder {
+      background: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
     .grid-item.placeholder svg { width: 24px; height: 24px; fill: #dbdbdb; }
   </style>
 </head>
@@ -48,71 +377,211 @@
   <div class="container">
     <div class="header">
       <div class="header-left">
-        <div class="profile-pic" id="profilePic">B</div>
+        <div class="profile-pic" id="profilePic">S</div>
         <span class="profile-name" id="profileName">Carregando...</span>
       </div>
       <button class="btn-refresh" id="btnRefresh" onclick="loadGrid()">
         <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-        <span>Atualizar Grid</span>
+        <span>Atualizar</span>
       </button>
     </div>
+
     <div class="stats" id="stats" style="display:none;">
       <span><strong id="totalPosts">0</strong> posts</span>
-      <span><strong id="totalApproved">0</strong> aprovados</span>
+      <span><strong id="totalAprovado">0</strong> aprovados</span>
+      <span><strong id="totalAgendado">0</strong> agendados</span>
+      <span><strong id="totalEntregue">0</strong> entregues</span>
     </div>
+
     <div id="content">
       <div class="loading">
         <div class="loading-spinner"></div>
         <p>Carregando preview do feed...</p>
       </div>
     </div>
-    <div class="footer">Grid Preview do Feed &bull; Studio W</div>
+
+    <div class="footer">Grid Preview &bull; Studio W</div>
   </div>
+
+  <div class="modal-backdrop" id="modalBackdrop" onclick="handleBackdropClick(event)">
+    <div class="modal" id="modal">
+      <div class="modal-media" id="modalMedia">
+        <button class="modal-close" onclick="closeModal()">
+          <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+        <div id="modalMediaContent" style="width:100%;height:100%"></div>
+      </div>
+      <div class="modal-info">
+        <div class="modal-title"  id="modalTitle"></div>
+        <div class="modal-badges" id="modalBadges"></div>
+        <div class="modal-meta"   id="modalMeta"></div>
+        <a id="modalNotionBtn" class="btn-notion" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24"><path d="M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2zm7 14l7-7-1.4-1.4L12 14.2l-3.6-3.6L7 12l5 5z"/></svg>
+          Ver demanda no Notion
+        </a>
+      </div>
+    </div>
+  </div>
+
   <script>
     const params = new URLSearchParams(window.location.search);
-    const CLIENT_NAME = params.get('client') || 'bonfimhotel.silvania';
-    const CLIENT_DISPLAY = params.get('display') || '@bonfimhotel.silvania';
-    document.getElementById('profileName').textContent = CLIENT_DISPLAY;
-    document.getElementById('profilePic').textContent = CLIENT_DISPLAY.charAt(1).toUpperCase();
+    const CLIENT_PAGE_ID = params.get('client_page_id') || '';
+    const CLIENT_DISPLAY  = params.get('display') || '';
+
+    if (CLIENT_DISPLAY) {
+      document.getElementById('profileName').textContent = CLIENT_DISPLAY;
+      document.getElementById('profilePic').textContent = CLIENT_DISPLAY.replace('@','').charAt(0).toUpperCase();
+    }
+
+    function isVideoUrl(url) {
+      if (!url) return false;
+      const p = url.toLowerCase().split('?')[0];
+      return p.endsWith('.mp4') || p.endsWith('.mov') || p.endsWith('.webm');
+    }
+
+    function formatDate(s) {
+      try {
+        return new Date(s + 'T00:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'short' });
+      } catch { return s; }
+    }
+
+    function esc(s) {
+      if (!s) return '';
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function getFormatIcon(formato) {
+      if (formato === 'CARROSSEL')
+        return '<div class="format-icon"><svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg></div>';
+      if (formato === 'VÍDEO')
+        return '<div class="format-icon"><svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg></div>';
+      return '';
+    }
+
     async function loadGrid() {
       const btn = document.getElementById('btnRefresh');
       const content = document.getElementById('content');
-      const stats = document.getElementById('stats');
+      const stats   = document.getElementById('stats');
+
       btn.disabled = true;
       btn.classList.add('spinning');
       content.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Carregando preview do feed...</p></div>';
+
       try {
-        const response = await fetch('/api/grid?client=' + encodeURIComponent(CLIENT_NAME));
-        if (!response.ok) throw new Error('Erro ' + response.status);
-        const data = await response.json();
+        const apiUrl = CLIENT_PAGE_ID
+          ? '/api/grid?client_page_id=' + encodeURIComponent(CLIENT_PAGE_ID)
+          : '/api/grid';
+
+        const res = await fetch(apiUrl);
+        if (!res.ok) {
+          const err = await res.json().catch(function(){ return {}; });
+          throw new Error(err.error || 'Erro ' + res.status);
+        }
+
+        const data = await res.json();
+
         if (!data.posts || data.posts.length === 0) {
-          content.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg><h3>Nenhuma imagem encontrada</h3><p>Adicione imagens na propriedade <strong>PREVIEW FEED</strong> dos posts aprovados.</p></div>';
+          content.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg><h3>Nenhum post encontrado</h3><p>Preencha o campo <strong>PREVIEW FEED</strong> nos posts<br>com status <strong>Aprovado</strong>, <strong>Agendado</strong> ou <strong>Entregue</strong>.</p></div>';
           stats.style.display = 'none';
           return;
         }
-        document.getElementById('totalPosts').textContent = data.total || data.posts.length;
-        document.getElementById('totalApproved').textContent = data.posts.length;
+
+        if (!CLIENT_DISPLAY) {
+          const match = (data.posts[0].nome || '').match(/@[w.]+/);
+          if (match) {
+            document.getElementById('profileName').textContent = match[0];
+            document.getElementById('profilePic').textContent = match[0].replace('@','').charAt(0).toUpperCase();
+          } else {
+            document.getElementById('profileName').textContent = 'Feed Studio W';
+          }
+        }
+
+        var cnt = { APROVADO:0, AGENDADO:0, ENTREGUE:0 };
+        data.posts.forEach(function(p){ if (cnt[p.linha_producao] !== undefined) cnt[p.linha_producao]++; });
+        document.getElementById('totalPosts').textContent    = data.posts.length;
+        document.getElementById('totalAprovado').textContent = cnt.APROVADO;
+        document.getElementById('totalAgendado').textContent = cnt.AGENDADO;
+        document.getElementById('totalEntregue').textContent = cnt.ENTREGUE;
         stats.style.display = 'flex';
-        let gridHTML = '<div class="grid">';
-        data.posts.forEach(post => {
-          const fmt = post.formato;
-          const icon = fmt === 'CARROSSEL' ? '<div class="carousel-icon"><svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg></div>' : fmt === 'VIDEO' ? '<div class="video-icon"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>' : '';
-          let dateStr = '';
-          try { if (post.data_entrega) { const d = new Date(post.data_entrega + 'T00:00:00'); dateStr = d.toLocaleDateString('pt-BR', {day:'2-digit',month:'short'}); } } catch(e) {}
-          gridHTML += '<div class="grid-item"><img src="' + post.image_url + '" alt="" loading="lazy" />' + icon + '<div class="overlay">' + (dateStr ? '<span class="date">' + dateStr + '</span>' : '') + (fmt ? '<span class="format-badge">' + fmt + '</span>' : '') + '</div></div>';
+
+        var html = '<div class="grid">';
+        data.posts.forEach(function(post, idx) {
+          var isVid = isVideoUrl(post.image_url) || post.formato === 'VÍDEO';
+          var sc    = post.linha_producao ? 'status-' + post.linha_producao : '';
+          html += '<div class="grid-item" onclick="openModal(' + idx + ')">' +
+            '<img src="' + esc(post.image_url) + '" alt="" loading="lazy" onerror="this.parentElement.style.background='#f0f0f0';this.style.display='none'" />' +
+            (post.linha_producao ? '<span class="status-badge ' + sc + '">' + post.linha_producao + '</span>' : '') +
+            getFormatIcon(post.formato) +
+            (isVid ? '<div class="video-play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>' : '') +
+            '<div class="overlay">' +
+            (post.nome ? '<span class="post-name">' + esc(post.nome) + '</span>' : '') +
+            (post.data_entrega ? '<span class="date">' + formatDate(post.data_entrega) + '</span>' : '') +
+            '</div></div>';
         });
-        const rem = data.posts.length % 3;
-        if (rem > 0) for (let i = 0; i < 3 - rem; i++) gridHTML += '<div class="grid-item placeholder"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></div>';
-        gridHTML += '</div>';
-        content.innerHTML = gridHTML;
-      } catch (error) {
-        content.innerHTML = '<div class="error-state"><p>' + error.message + '</p><button class="btn-refresh" onclick="loadGrid()"><span>Tentar novamente</span></button></div>';
+
+        var rem = data.posts.length % 3;
+        if (rem > 0) for (var i = 0; i < 3-rem; i++)
+          html += '<div class="grid-item placeholder"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></div>';
+
+        html += '</div>';
+        content.innerHTML = html;
+        window.__posts = data.posts;
+
+      } catch (err) {
+        content.innerHTML = '<div class="error-state"><p>' + esc(err.message) + '</p><button class="btn-refresh" onclick="loadGrid()"><span>Tentar novamente</span></button></div>';
         stats.style.display = 'none';
       } finally {
         btn.disabled = false;
         btn.classList.remove('spinning');
       }
     }
+
+    function openModal(idx) {
+      var post = (window.__posts || [])[idx];
+      if (!post) return;
+
+      var isVid = isVideoUrl(post.image_url) || post.formato === 'VÍDEO';
+      var mc = document.getElementById('modalMediaContent');
+
+      if (isVid) {
+        mc.innerHTML = '<video src="' + esc(post.image_url) + '" autoplay muted loop playsinline controls style="width:100%;height:100%;object-fit:contain;background:#000"></video>';
+      } else {
+        mc.innerHTML = '<img src="' + esc(post.image_url) + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block" />';
+      }
+
+      document.getElementById('modalTitle').textContent = post.nome || 'Sem titulo';
+
+      var badges = '';
+      if (post.linha_producao) badges += '<span class="badge badge-' + post.linha_producao + '">' + post.linha_producao + '</span>';
+      if (post.formato)        badges += '<span class="badge badge-format">' + post.formato + '</span>';
+      if (post.pilar)          badges += '<span class="badge badge-format">' + post.pilar + '</span>';
+      document.getElementById('modalBadges').innerHTML = badges;
+
+      var meta = '';
+      if (post.data_entrega) meta += '<div class="modal-meta-row"><svg viewBox="0 0 24 24"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg><span>Entrega prevista: <strong>' + formatDate(post.data_entrega) + '</strong></span></div>';
+      document.getElementById('modalMeta').innerHTML = meta;
+
+      var notionBtn = document.getElementById('modalNotionBtn');
+      notionBtn.href = post.notion_url || '#';
+      notionBtn.style.display = post.notion_url ? 'flex' : 'none';
+
+      document.getElementById('modalBackdrop').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      document.getElementById('modalBackdrop').classList.remove('open');
+      document.body.style.overflow = '';
+      var v = document.querySelector('#modalMediaContent video');
+      if (v) { v.pause(); v.src = ''; }
+    }
+
+    function handleBackdropClick(e) {
+      if (e.target === document.getElementById('modalBackdrop')) closeModal();
+    }
+
+    document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeModal(); });
+
     loadGrid();
   </script>
 </body>

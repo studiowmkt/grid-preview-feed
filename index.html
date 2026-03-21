@@ -47,6 +47,7 @@
       font-weight: 700;
       font-size: 14px;
       flex-shrink: 0;
+      overflow: hidden;
     }
 
     .profile-name { font-weight: 600; font-size: 14px; }
@@ -265,10 +266,71 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      z-index: 10;
+      z-index: 20;
     }
 
     .modal-close svg { width: 16px; height: 16px; fill: white; }
+
+    /* ââ CARROSSEL ââââââââââââââââââââââââââââââââââââââââââââ */
+    .carousel-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0,0,0,0.45);
+      border: none;
+      color: white;
+      font-size: 26px;
+      font-weight: 300;
+      line-height: 1;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      transition: background 0.2s;
+    }
+
+    .carousel-nav:hover { background: rgba(0,0,0,0.72); }
+    .carousel-nav.prev  { left: 8px; }
+    .carousel-nav.next  { right: 8px; }
+
+    .carousel-dots {
+      position: absolute;
+      bottom: 10px;
+      left: 0; right: 0;
+      display: flex;
+      justify-content: center;
+      gap: 5px;
+    }
+
+    .carousel-dots button {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.45);
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      transition: background 0.2s, transform 0.15s;
+    }
+
+    .carousel-dots button.active {
+      background: white;
+      transform: scale(1.35);
+    }
+
+    .carousel-counter {
+      position: absolute;
+      top: 48px;
+      right: 10px;
+      background: rgba(0,0,0,0.55);
+      color: white;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
 
     .modal-info {
       padding: 16px;
@@ -299,7 +361,7 @@
       letter-spacing: 0.3px;
     }
 
-    .badge-APROVADO { background: #d4edda; color: #155724; }
+    .badge-APROUADO { background: #d4edda; color: #155724; }
     .badge-AGENDADO { background: #cce5ff; color: #004085; }
     .badge-ENTREGUE { background: #e2e3e5; color: #383d41; }
     .badge-format   { background: #f0f0f0; color: #555; }
@@ -409,7 +471,7 @@
       </div>
     </div>
 
-    <div class="footer">Grid Preview &bull; Studio W</div>
+    <div class="footer">Â© 2026 Desenvolvido por Studio W AgÃªncia de Marketing LTDA</div>
   </div>
 
   <!-- MODAL -->
@@ -419,7 +481,7 @@
         <button class="modal-close" onclick="closeModal()">
           <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
         </button>
-        <div id="modalMediaContent" style="width:100%;height:100%"></div>
+        <div id="modalMediaContent" style="width:100%;height:100%;position:relative"></div>
       </div>
       <div class="modal-info">
         <div class="modal-title"  id="modalTitle"></div>
@@ -437,10 +499,13 @@
     const params = new URLSearchParams(window.location.search);
     const CLIENT_PAGE_ID = params.get('client_page_id') || '';
     const CLIENT_DISPLAY  = params.get('display') || '';
+
     if (CLIENT_DISPLAY) {
       document.getElementById('profileName').textContent = CLIENT_DISPLAY;
       document.getElementById('profilePic').textContent = CLIENT_DISPLAY.replace('@','').charAt(0).toUpperCase();
     }
+
+    // ââ atualiza cabeÃ§alho com foto e handle reais do cliente âââââââââ
     function updateClientHeader(client) {
       if (!client) return;
       const picEl  = document.getElementById('profilePic');
@@ -464,49 +529,103 @@
         picEl.textContent = display.replace('@','').charAt(0).toUpperCase();
       }
     }
+
+    // ââ helpers ââââââââââââââââââââââââââââââââââââââââââââââââââââââ
     function isVideoUrl(url) {
       if (!url) return false;
       const p = url.toLowerCase().split('?')[0];
       return p.endsWith('.mp4') || p.endsWith('.mov') || p.endsWith('.webm');
     }
+
+    function isVideoPost(post) {
+      return post.formato === 'VÃDEO' || post.formato === 'REELS' || isVideoUrl(post.image_url);
+    }
+
     function formatDate(s) {
       try {
         return new Date(s + 'T00:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'short' });
       } catch { return s; }
     }
+
     function esc(s) {
       if (!s) return '';
       return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
+
     function getFormatIcon(formato) {
       if (formato === 'CARROSSEL')
         return `<div class="format-icon"><svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg></div>`;
-      if (formato === 'VÃDEO')
+      if (formato === 'VÃDEO' || formato === 'REELS')
         return `<div class="format-icon"><svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg></div>`;
       return '';
     }
+
+    // ââ carrossel âââââââââââââââââââââââââââââââââââââââââââââââââââââ
+    window.__carousel = { images: [], idx: 0 };
+
+    function renderCarouselSlide(idx) {
+      const imgs  = window.__carousel.images;
+      const total = imgs.length;
+      const mc    = document.getElementById('modalMediaContent');
+      window.__carousel.idx = idx;
+
+      const dots = imgs.map((_, i) =>
+        `<button ${i === idx ? 'class="active"' : ''} onclick="goSlide(${i})"></button>`
+      ).join('');
+
+      mc.innerHTML = `
+        <img src="${esc(imgs[idx])}" alt=""
+          style="width:100%;height:100%;object-fit:contain;display:block"
+          onerror="this.style.background='#222'" />
+        ${total > 1 ? `
+        <button class="carousel-nav prev" onclick="goSlide(${(idx - 1 + total) % total})">&#8249;</button>
+        <button class="carousel-nav next" onclick="goSlide(${(idx + 1) % total})">&#8250;</button>
+        <div class="carousel-dots">${dots}</div>
+        <div class="carousel-counter">${idx + 1} / ${total}</div>
+        ` : ''}
+      `;
+    }
+
+    function goSlide(idx) {
+      window.__carousel.idx = idx;
+      renderCarouselSlide(idx);
+    }
+
+    // ââ load grid ââââââââââââââââââââââââââââââââââââââââââââââââââââ
     async function loadGrid() {
-      const btn = document.getElementById('btnRefresh');
+      const btn     = document.getElementById('btnRefresh');
       const content = document.getElementById('content');
       const stats   = document.getElementById('stats');
+
       btn.disabled = true;
       btn.classList.add('spinning');
       content.innerHTML = `<div class="loading"><div class="loading-spinner"></div><p>Carregando preview do feed...</p></div>`;
+
       try {
         const apiUrl = CLIENT_PAGE_ID
           ? `/api/grid?client_page_id=${encodeURIComponent(CLIENT_PAGE_ID)}`
           : `/api/grid`;
+
         const res = await fetch(apiUrl);
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
           throw new Error(err.error || `Erro ${res.status}`);
         }
+
         const data = await res.json();
+
         if (!data.posts || data.posts.length === 0) {
-          content.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg><h3>Nenhum post encontrado</h3><p>Preencha o campo <strong>PREVIEW FEED</strong> nos posts<br>com status <strong>Aprovado</strong>, <strong>Agendado</strong> ou <strong>Entregue</strong>.</p></div>`;
+          content.innerHTML = `
+            <div class="empty-state">
+              <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+              <h3>Nenhum post encontrado</h3>
+              <p>Preencha o campo <strong>PREVIEW FEED</strong> nos posts<br>com status <strong>Aprovado</strong>, <strong>Agendado</strong> ou <strong>Entregue</strong>.</p>
+            </div>`;
           stats.style.display = 'none';
           return;
         }
+
+        // Atualiza cabeÃ§alho com dados reais do cliente (foto + handle)
         if (data.client && (data.client.nome || data.client.arroba || data.client.foto_url)) {
           updateClientHeader(data.client);
         } else if (!CLIENT_DISPLAY) {
@@ -518,6 +637,8 @@
             document.getElementById('profileName').textContent = 'Feed Studio W';
           }
         }
+
+        // Stats
         const cnt = { APROVADO:0, AGENDADO:0, ENTREGUE:0 };
         data.posts.forEach(p => { if (cnt[p.linha_producao] !== undefined) cnt[p.linha_producao]++; });
         document.getElementById('totalPosts').textContent    = data.posts.length;
@@ -525,10 +646,14 @@
         document.getElementById('totalAgendado').textContent = cnt.AGENDADO;
         document.getElementById('totalEntregue').textContent = cnt.ENTREGUE;
         stats.style.display = 'flex';
+
+        // Build grid HTML
         let html = '<div class="grid">';
         data.posts.forEach((post, idx) => {
-          const isVid = isVideoUrl(post.image_url) || post.formato === 'VÃDEO';
-          const sc    = post.linha_producao ? `status-${post.linha_producao}` : '';
+          const isVid  = isVideoPost(post);
+          const sc     = post.linha_producao ? `status-${post.linha_producao}` : '';
+          const hasMulti = post.images && post.images.length > 1;
+
           html += `<div class="grid-item" onclick="openModal(${idx})">
             <img src="${esc(post.image_url)}" alt="" loading="lazy"
               onerror="this.parentElement.style.background='#f0f0f0';this.style.display='none'" />
@@ -541,49 +666,80 @@
             </div>
           </div>`;
         });
+
+        // Pad last row
         const rem = data.posts.length % 3;
-        if (rem > 0) for (let i = 0; i < 3-rem; i++)
+        if (rem > 0) for (let i = 0; i < 3 - rem; i++)
           html += `<div class="grid-item placeholder"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></div>`;
+
         html += '</div>';
         content.innerHTML = html;
         window.__posts = data.posts;
+
       } catch (err) {
-        content.innerHTML = `<div class="error-state"><p>${esc(err.message)}</p><button class="btn-refresh" onclick="loadGrid()"><span>Tentar novamente</span></button></div>`;
+        content.innerHTML = `<div class="error-state"><p>${esc(err.message)}</p>
+          <button class="btn-refresh" onclick="loadGrid()"><span>Tentar novamente</span></button></div>`;
         stats.style.display = 'none';
       } finally {
         btn.disabled = false;
         btn.classList.remove('spinning');
       }
     }
+
+    // ââ modal ââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
     function openModal(idx) {
       const post = (window.__posts || [])[idx];
       if (!post) return;
-      const isVid = isVideoUrl(post.image_url) || post.formato === 'VÃDEO';
-      const mc = document.getElementById('modalMediaContent');
+
+      const isVid    = isVideoPost(post);
+      const isCarrou = !isVid && post.images && post.images.length > 1;
+      const mc       = document.getElementById('modalMediaContent');
+
       if (isVid) {
         if (post.embed_url) {
-          mc.innerHTML = `<iframe src="${esc(post.embed_url)}" width="100%" height="100%" frameborder="0" allow="autoplay" allowfullscreen style="display:block;border:none;background:#000"></iframe>`;
+          mc.innerHTML = `<iframe src="${esc(post.embed_url)}" width="100%" height="100%"
+            frameborder="0" allow="autoplay" allowfullscreen
+            style="display:block;border:none;background:#000;position:absolute;inset:0"></iframe>`;
         } else {
-          mc.innerHTML = `<video src="${esc(post.image_url)}" autoplay muted loop playsinline controls style="width:100%;height:100%;object-fit:contain;background:#000"></video>`;
+          mc.innerHTML = `<video src="${esc(post.image_url)}" autoplay muted loop playsinline controls
+            style="width:100%;height:100%;object-fit:contain;background:#000;display:block"></video>`;
         }
+      } else if (isCarrou) {
+        window.__carousel = { images: post.images, idx: 0 };
+        renderCarouselSlide(0);
       } else {
-        mc.innerHTML = `<img src="${esc(post.image_url)}" alt="" style="width:100%;height:100%;object-fit:contain;display:block" />`;
+        mc.innerHTML = `<img src="${esc(post.image_url)}" alt=""
+          style="width:100%;height:100%;object-fit:contain;display:block" />`;
       }
+
+      // Title
       document.getElementById('modalTitle').textContent = post.nome || 'Sem tÃ­tulo';
+
+      // Badges
       let badges = '';
       if (post.linha_producao) badges += `<span class="badge badge-${post.linha_producao}">${post.linha_producao}</span>`;
       if (post.formato)        badges += `<span class="badge badge-format">${post.formato}</span>`;
       if (post.pilar)          badges += `<span class="badge badge-format">${post.pilar}</span>`;
       document.getElementById('modalBadges').innerHTML = badges;
+
+      // Meta
       let meta = '';
-      if (post.data_entrega) meta += `<div class="modal-meta-row"><svg viewBox="0 0 24 24"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg><span>Entrega prevista: <strong>${formatDate(post.data_entrega)}</strong></span></div>`;
+      if (post.data_entrega) meta += `
+        <div class="modal-meta-row">
+          <svg viewBox="0 0 24 24"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
+          <span>Entrega prevista: <strong>${formatDate(post.data_entrega)}</strong></span>
+        </div>`;
       document.getElementById('modalMeta').innerHTML = meta;
+
+      // Notion button
       const btn = document.getElementById('modalNotionBtn');
       btn.href = post.notion_url || '#';
       btn.style.display = post.notion_url ? 'flex' : 'none';
+
       document.getElementById('modalBackdrop').classList.add('open');
       document.body.style.overflow = 'hidden';
     }
+
     function closeModal() {
       document.getElementById('modalBackdrop').classList.remove('open');
       document.body.style.overflow = '';
@@ -591,11 +747,22 @@
       if (v) { v.pause(); v.src = ''; }
       const iframe = document.querySelector('#modalMediaContent iframe');
       if (iframe) { iframe.src = ''; }
+      window.__carousel = { images: [], idx: 0 };
     }
+
     function handleBackdropClick(e) {
       if (e.target === document.getElementById('modalBackdrop')) closeModal();
     }
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { closeModal(); return; }
+      const imgs = window.__carousel?.images;
+      if (!imgs || imgs.length <= 1) return;
+      if (e.key === 'ArrowLeft')  goSlide((window.__carousel.idx - 1 + imgs.length) % imgs.length);
+      if (e.key === 'ArrowRight') goSlide((window.__carousel.idx + 1) % imgs.length);
+    });
+
+    // Auto-load
     loadGrid();
   </script>
 </body>

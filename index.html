@@ -199,7 +199,7 @@
       opacity: 0.9;
     }
 
-    /* ââ MODAL ââââââââââââââââââââââââââââââââââââââââââââââââ */
+    /* ── MODAL ──────────────────────────────────────────────── */
     .modal-backdrop {
       display: none;
       position: fixed;
@@ -271,7 +271,7 @@
 
     .modal-close svg { width: 16px; height: 16px; fill: white; }
 
-    /* ââ CARROSSEL ââââââââââââââââââââââââââââââââââââââââââââ */
+    /* ── CARROSSEL ──────────────────────────────────────────── */
     .carousel-nav {
       position: absolute;
       top: 50%;
@@ -361,7 +361,7 @@
       letter-spacing: 0.3px;
     }
 
-    .badge-APROUADO { background: #d4edda; color: #155724; }
+    .badge-APROVADO { background: #d4edda; color: #155724; }
     .badge-AGENDADO { background: #cce5ff; color: #004085; }
     .badge-ENTREGUE { background: #e2e3e5; color: #383d41; }
     .badge-format   { background: #f0f0f0; color: #555; }
@@ -471,7 +471,7 @@
       </div>
     </div>
 
-    <div class="footer">Â© 2026 Desenvolvido por Studio W AgÃªncia de Marketing LTDA</div>
+    <div class="footer">© 2026 Desenvolvido por Studio W Agência de Marketing LTDA</div>
   </div>
 
   <!-- MODAL -->
@@ -505,7 +505,7 @@
       document.getElementById('profilePic').textContent = CLIENT_DISPLAY.replace('@','').charAt(0).toUpperCase();
     }
 
-    // ââ atualiza cabeÃ§alho com foto e handle reais do cliente âââââââââ
+    // ── atualiza cabeçalho com foto e handle reais do cliente ─────────
     function updateClientHeader(client) {
       if (!client) return;
       const picEl  = document.getElementById('profilePic');
@@ -530,7 +530,7 @@
       }
     }
 
-    // ââ helpers ââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+    // ── helpers ──────────────────────────────────────────────────────
     function isVideoUrl(url) {
       if (!url) return false;
       const p = url.toLowerCase().split('?')[0];
@@ -538,7 +538,7 @@
     }
 
     function isVideoPost(post) {
-      return post.formato === 'VÃDEO' || post.formato === 'REELS' || isVideoUrl(post.image_url);
+      return post.formato === 'VÍDEO' || post.formato === 'REELS' || isVideoUrl(post.image_url);
     }
 
     function formatDate(s) {
@@ -555,12 +555,12 @@
     function getFormatIcon(formato) {
       if (formato === 'CARROSSEL')
         return `<div class="format-icon"><svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg></div>`;
-      if (formato === 'VÃDEO' || formato === 'REELS')
+      if (formato === 'VÍDEO' || formato === 'REELS')
         return `<div class="format-icon"><svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg></div>`;
       return '';
     }
 
-    // ââ carrossel âââââââââââââââââââââââââââââââââââââââââââââââââââââ
+    // ── carrossel ─────────────────────────────────────────────────────
     window.__carousel = { images: [], idx: 0 };
 
     function renderCarouselSlide(idx) {
@@ -591,7 +591,7 @@
       renderCarouselSlide(idx);
     }
 
-    // ââ load grid ââââââââââââââââââââââââââââââââââââââââââââââââââââ
+    // ── load grid ────────────────────────────────────────────────────
     async function loadGrid() {
       const btn     = document.getElementById('btnRefresh');
       const content = document.getElementById('content');
@@ -625,7 +625,7 @@
           return;
         }
 
-        // Atualiza cabeÃ§alho com dados reais do cliente (foto + handle)
+        // Atualiza cabeçalho com dados reais do cliente (foto + handle)
         if (data.client && (data.client.nome || data.client.arroba || data.client.foto_url)) {
           updateClientHeader(data.client);
         } else if (!CLIENT_DISPLAY) {
@@ -686,7 +686,7 @@
       }
     }
 
-    // ââ modal ââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+    // ── modal ────────────────────────────────────────────────────────
     function openModal(idx) {
       const post = (window.__posts || [])[idx];
       if (!post) return;
@@ -713,7 +713,7 @@
       }
 
       // Title
-      document.getElementById('modalTitle').textContent = post.nome || 'Sem tÃ­tulo';
+      document.getElementById('modalTitle').textContent = post.nome || 'Sem título';
 
       // Badges
       let badges = '';

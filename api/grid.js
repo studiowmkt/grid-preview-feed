@@ -78,7 +78,9 @@ export default async function handler(req, res) {
       if (!cr.ok) {
         const errBody = await cr.json().catch(() => ({}));
         _dbg.notion_error = errBody;
-        if (debugMode) info._fetch_debug = _dbg;
+        const tokenArr = p['TOKEN_ACESSO']?.rich_text;
+  if (tokenArr?.length > 0) info.token_acesso = tokenArr.map(t => t.plain_text).join('');
+  if (debugMode) info._fetch_debug = _dbg;
         return info;
       }
       const cd = await cr.json();
@@ -107,6 +109,18 @@ export default async function handler(req, res) {
     // Busca info do cliente se ID explícito fornecido
     if (clientPageId) {
       clientInfo = await fetchClientInfo(clientPageId, debug);
+    }
+
+    // === SEGURANÇA LGPD: validação de token por cliente ===
+    const providedToken = req.query.token || '';
+    if (!debug) {
+      const clientToken = clientInfo.token_acesso || '';
+      if (clientToken && clientToken !== providedToken) {
+        return res.status(403).json({
+          error: 'Acesso negado',
+          message: 'Link de acesso inválido. Solicite um novo link à Studio W.'
+        });
+      }
     }
 
     // Filtros

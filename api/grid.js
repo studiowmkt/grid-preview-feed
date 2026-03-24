@@ -131,7 +131,7 @@ export default async function handler(req, res) {
     }
 
     const body = {
-      sorts: [{ property: 'DATA DE ENTREGA CLIENTE', direction: 'descending' }],
+      sorts: [{ property: 'ENTREGA CLIENTE', direction: 'descending' }],
       page_size: debug ? 20 : 100
     };
     if (filter) body.filter = filter;
@@ -195,7 +195,7 @@ export default async function handler(req, res) {
         id:             page.id,
         notion_url:     page.url,
         nome:           p['Nome']?.title?.[0]?.plain_text || '',
-        data_entrega:   p['DATA DE ENTREGA CLIENTE']?.date?.start || '',
+        data_entrega:   p['ENTREGA CLIENTE']?.date?.start || '',
         linha_producao: status,
         formato:        p['Formato']?.select?.name || '',
         pilar:          p['PILAR']?.select?.name   || '',

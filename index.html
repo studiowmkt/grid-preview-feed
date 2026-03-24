@@ -279,6 +279,9 @@ body {
 .btn-notion:hover { background: #3d3d3d; }
 .btn-notion:active { transform: scale(.98); }
 .btn-notion svg { width: 16px; height: 16px; fill: #fff; }
+.thumb-ph { position:absolute; inset:0; background:linear-gradient(135deg,#1a1a2e 0%,#0f3460 100%); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; }
+.thumb-ph svg { width:28px; height:28px; fill:rgba(255,255,255,.3); }
+.thumb-ph span { font-size:9px; color:rgba(255,255,255,.4); letter-spacing:.5px; text-transform:uppercase; }
 </style>
 </head>
 <body>
@@ -442,7 +445,12 @@ function renderGrid() {
     const bc   = p.linha_producao ? `badge-st b-${p.linha_producao}` : '';
     const notionHref = esc(p.notion_url || '#');
     html += `<div class="grid-item" data-i="${i}" onclick="gridClick(${i})" title="Ver post">`;
-    html += `<img class="thumb" src="${esc(p.image_url)}" alt="" loading="lazy" onerror="this.style.opacity='.15'">`;
+    if (p.image_url) {
+      html += `<img class="thumb" src="${esc(p.image_url)}" alt="" loading="lazy" onerror="this.style.opacity='.15'">`;
+    } else if (p.folder_url) {
+      const _ic = vid ? '<svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>' : '<svg viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>';
+      html += `<div class="thumb-ph">${_ic}<span>Preview pendente</span></div>`;
+    }
     if (bc) html += `<span class="${bc}">${p.linha_producao}</span>`;
     if (vid)  html += `<div class="fmt-icon"><svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg></div>`;
     if (carr) html += `<div class="fmt-icon"><svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg></div>`;
@@ -476,8 +484,10 @@ function openModal(i) {
   } else if (carr && p.images && p.images.length > 1) {
     CAR = { imgs: p.images, idx: 0 };
     renderSlide(0);
-  } else {
+  } else if (p.image_url) {
     mc.innerHTML = `<img src="${esc(p.image_url)}" alt="" onerror="this.style.background='#111'">`;
+  } else if (p.folder_url) {
+    mc.innerHTML = `<div style="position:absolute;inset:0;background:linear-gradient(135deg,#1a1a2e,#0f3460);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center;"><svg viewBox="0 0 24 24" style="width:52px;height:52px;fill:rgba(255,255,255,.35)"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg><p style="color:rgba(255,255,255,.6);font-size:13px;line-height:1.6">Preview não disponível.<br>Acesse a pasta no Drive.</p><a href="${esc(p.folder_url)}" target="_blank" rel="noopener" style="background:#0f9d58;color:#fff;padding:10px 22px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">Abrir no Drive</a></div>`;
   }
 
   document.getElementById('mTitle').textContent = p.nome || 'Sem titulo';

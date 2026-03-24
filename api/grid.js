@@ -201,6 +201,7 @@ export default async function handler(req, res) {
         pilar:          p['PILAR']?.select?.name   || '',
         image_url,
         embed_url,
+        folder_url: (folderId && !image_url) ? rawUrl : '',
         images: image_url ? [image_url] : []
       };
 
@@ -220,7 +221,7 @@ export default async function handler(req, res) {
       return post;
     });
 
-    const posts = debug ? rawPosts : rawPosts.filter(p => p.image_url);
+    const posts = debug ? rawPosts : rawPosts.filter(p => p.image_url || p.folder_url);
 
     // Auto-detect cliente: se não veio client_page_id mas posts existem,
     // pega o cliente da relação do primeiro post automaticamente

@@ -32,24 +32,87 @@ export default async function handler(req, res) {
     return !!(url && url.startsWith('http'));
   }
 
+  // Autentica via Google Service Account (para pastas privadas)
+  // O email da service account deve ser adicionado como membro da pasta no Drive
+  async function getServiceAccountToken(saJson) {
+    try {
+      const sa = JSON.parse(saJson);
+      const now = Math.floor(Date.now() / 1000);
+      const toB64 = obj => Buffer.from(JSON.stringify(obj)).toString('base64url');
+      const header  = toB64({ alg: 'RS256', typ: 'JWT' });
+      const payload = toB64({
+        iss: sa.client_email,
+        scope: 'https://www.googleapis.com/auth/drive.readonly',
+        aud: 'https://oauth2.googleapis.com/token',
+        exp: now + 3600, iat: now
+      });
+      const unsigned = header + '.' + payload;
+      // Importa chave privada via Web Crypto (disponível no Node.js 18+)
+      const pemBody  = sa.private_key.replace(/-----[^-]+-----/g, '').replace(/\n/g, '');
+      const keyBytes = Buffer.from(pemBody, 'base64');
+      const cryptoKey = await globalThis.crypto.subtle.importKey(
+        'pkcs8', keyBytes.buffer,
+        { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+        false, ['sign']
+      );
+      const sigBuf = await globalThis.crypto.subtle.sign(
+        'RSASSA-PKCS1-v1_5', cryptoKey, Buffer.from(unsigned)
+      );
+      const jwt = unsigned + '.' + Buffer.from(sigBuf).toString('base64url');
+      const res = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+          assertion: jwt
+        })
+      });
+      if (!res.ok) return null;
+      const { access_token } = await res.json();
+      return access_token;
+    } catch (_) { return null; }
+  }
+
   // Resolve pasta → ID do arquivo mais recente
-  // Estratégia 1: Google Drive API (se GOOGLE_API_KEY estiver configurada no Vercel)
-  // Estratégia 2: parse do HTML da página embed do Drive (sem chave)
+  // Estratégia 1: Service Account (pastas privadas — email da SA adicionado como membro)
+  // Estratégia 2: API Key simples (pastas públicas)
+  // Estratégia 3: parse do HTML embed do Drive (fallback sem chave)
   async function resolveFolderToFileId(folderId) {
-    // Estratégia 1 — Drive API v3 (mais confiável)
+    const SA_JSON = process.env.GOOGLE_SERVICE_ACCOUNT_JSON || '';
+
+    // Estratégia 1 — Service Account
+    if (SA_JSON) {
+      const token = await getServiceAccountToken(SA_JSON);
+      if (token) {
+        try {
+          const q = encodeURIComponent(`'${folderId}' in parents and trashed = false`);
+          const r = await fetch(
+            `https://www.googleapis.com/drive/v3/files?q=${q}&orderBy=modifiedTime+desc&pageSize=1&fields=files(id,name)`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          if (r.ok) {
+            const d = await r.json();
+            if (d.files?.length > 0) return { id: d.files[0].id, via: 'sa' };
+          }
+        } catch (_) { /* continua */ }
+      }
+    }
+
+    // Estratégia 2 — API Key (só para pastas públicas)
     if (GOOGLE_KEY) {
       try {
-        const q   = encodeURIComponent(`'${folderId}' in parents and trashed = false`);
-        const url = `https://www.googleapis.com/drive/v3/files?q=${q}&orderBy=modifiedTime+desc&pageSize=1&fields=files(id,name)&key=${GOOGLE_KEY}`;
-        const r   = await fetch(url);
+        const q = encodeURIComponent(`'${folderId}' in parents and trashed = false`);
+        const r = await fetch(
+          `https://www.googleapis.com/drive/v3/files?q=${q}&orderBy=modifiedTime+desc&pageSize=1&fields=files(id,name)&key=${GOOGLE_KEY}`
+        );
         if (r.ok) {
           const d = await r.json();
           if (d.files?.length > 0) return { id: d.files[0].id, via: 'api' };
         }
-      } catch (_) { /* continua para estratégia 2 */ }
+      } catch (_) { /* continua */ }
     }
 
-    // Estratégia 2 — parse do HTML embed (sem chave de API)
+    // Estratégia 3 — parse do HTML embed (sem chave, só para pastas públicas)
     try {
       const r = await fetch(`https://drive.google.com/embeddedfolderview?id=${folderId}#list`, {
         headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36' }
@@ -239,7 +302,7 @@ export default async function handler(req, res) {
       updated_at: new Date().toISOString(),
       ...(debug ? {
         _debug_mode: true,
-        _google_key: GOOGLE_KEY ? 'configurada ✓' : 'NÃO configurada (usando fallback HTML)',
+        _google_key: process.env.GOOGLE_SERVICE_ACCOUNT_JSON ? 'service-account ✓' : (GOOGLE_KEY ? 'api-key ✓' : 'NÃO configurada (usando fallback HTML)'),
         _client_page_id_used: clientPageId || autoDetectedId || '(nenhum)',
         _hint: 'Use ?debug=1 para diagnóstico. Use ?debug=1&client_page_id=ID para filtrar por cliente.'
       } : {})

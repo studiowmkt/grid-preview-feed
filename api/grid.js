@@ -5,13 +5,19 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const NOTION_TOKEN = process.env.NOTION_TOKEN;
-  const DATABASE_ID  = process.env.NOTION_DATABASE_ID || '1880d359-56f6-81c5-83f6-f889201c49e9';
-  const GOOGLE_KEY   = process.env.GOOGLE_API_KEY || '';
-  const debug        = req.query.debug === '1';
+  const DATABASE_ID = process.env.NOTION_DATABASE_ID || '1880d359-56f6-81c5-83f6-f889201c49e9';
+  const GOOGLE_KEY  = process.env.GOOGLE_API_KEY || '';
+
+  // Debug mode: requer token secreto definido como GRID_DEBUG_TOKEN no Vercel
+  // Fallback para '1' apenas se GRID_DEBUG_TOKEN não estiver configurado (retrocompatibilidade)
+  const DEBUG_TOKEN = process.env.GRID_DEBUG_TOKEN || '';
+  const debug = DEBUG_TOKEN
+    ? (req.query.debug === DEBUG_TOKEN)
+    : (req.query.debug === '1');
 
   if (!NOTION_TOKEN) return res.status(500).json({ error: 'NOTION_TOKEN nao configurado' });
 
-  // ── helpers ──────────────────────────────────────────────────────────────
+  // ── helpers ────────────────────────────────────────────────────────────────
 
   function driveFileId(url) {
     if (!url) return null;
@@ -32,45 +38,67 @@ export default async function handler(req, res) {
     return !!(url && url.startsWith('http'));
   }
 
+  // Converte Buffer do Node.js para ArrayBuffer correto (sem o pool offset)
+  // Buffer.from().buffer retorna o pool inteiro — é preciso fatiar o trecho correto
+  function bufToArrayBuffer(buf) {
+    return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+  }
+
   // Autentica via Google Service Account (para pastas privadas)
-  // O email da service account deve ser adicionado como membro da pasta no Drive
   async function getServiceAccountToken(saJson) {
     try {
-      const sa = JSON.parse(saJson);
+      const sa  = JSON.parse(saJson);
       const now = Math.floor(Date.now() / 1000);
       const toB64 = obj => Buffer.from(JSON.stringify(obj)).toString('base64url');
+
       const header  = toB64({ alg: 'RS256', typ: 'JWT' });
       const payload = toB64({
-        iss: sa.client_email,
+        iss:   sa.client_email,
         scope: 'https://www.googleapis.com/auth/drive.readonly',
-        aud: 'https://oauth2.googleapis.com/token',
-        exp: now + 3600, iat: now
+        aud:   'https://oauth2.googleapis.com/token',
+        exp:   now + 3600,
+        iat:   now,
       });
+
       const unsigned = header + '.' + payload;
-      // Importa chave privada via Web Crypto (disponível no Node.js 18+)
-      const pemBody  = sa.private_key.replace(/-----[^-]+-----/g, '').replace(/\n/g, '');
-      const keyBytes = Buffer.from(pemBody, 'base64');
+
+      // Limpa o PEM e extrai bytes da chave privada
+      const pemBody  = sa.private_key.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '');
+      const keyBuf   = Buffer.from(pemBody, 'base64');
+      // FIX: usa bufToArrayBuffer para evitar o bug do Node.js Buffer pool
       const cryptoKey = await globalThis.crypto.subtle.importKey(
-        'pkcs8', keyBytes.buffer,
+        'pkcs8',
+        bufToArrayBuffer(keyBuf),
         { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-        false, ['sign']
+        false,
+        ['sign']
       );
+
+      // FIX: mesma correção para os dados a assinar
+      const unsignedBuf = Buffer.from(unsigned);
       const sigBuf = await globalThis.crypto.subtle.sign(
-        'RSASSA-PKCS1-v1_5', cryptoKey, Buffer.from(unsigned)
+        'RSASSA-PKCS1-v1_5',
+        cryptoKey,
+        bufToArrayBuffer(unsignedBuf)
       );
+
       const jwt = unsigned + '.' + Buffer.from(sigBuf).toString('base64url');
+
       const res = await fetch('https://oauth2.googleapis.com/token', {
-        method: 'POST',
+        method:  'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
+        body:    new URLSearchParams({
           grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-          assertion: jwt
-        })
+          assertion:  jwt,
+        }),
       });
+
       if (!res.ok) return null;
       const { access_token } = await res.json();
       return access_token;
-    } catch (_) { return null; }
+    } catch (_) {
+      return null;
+    }
   }
 
   // Resolve pasta → ID do arquivo mais recente
@@ -114,12 +142,18 @@ export default async function handler(req, res) {
 
     // Estratégia 3 — parse do HTML embed (sem chave, só para pastas públicas)
     try {
-      const r = await fetch(`https://drive.google.com/embeddedfolderview?id=${folderId}#list`, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36' }
-      });
+      const r = await fetch(
+        `https://drive.google.com/embeddedfolderview?id=${folderId}#list`,
+        {
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          },
+        }
+      );
       if (r.ok) {
         const html = await r.text();
-        const m = html.match(/\/file\/d\/([a-zA-Z0-9_-]{20,})/);
+        const m    = html.match(/\/file\/d\/([a-zA-Z0-9_-]{20,})/);
         if (m) return { id: m[1], via: 'html' };
       }
     } catch (_) { /* */ }
@@ -135,13 +169,16 @@ export default async function handler(req, res) {
     let _dbg = {};
     try {
       const cr = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
-        headers: { 'Authorization': `Bearer ${NOTION_TOKEN}`, 'Notion-Version': '2022-06-28' }
+        headers: {
+          Authorization:    `Bearer ${NOTION_TOKEN}`,
+          'Notion-Version': '2022-06-28',
+        },
       });
       _dbg.http_status = cr.status;
       if (!cr.ok) {
         const errBody = await cr.json().catch(() => ({}));
         _dbg.notion_error = errBody;
-  if (debugMode) info._fetch_debug = _dbg;
+        if (debugMode) info._fetch_debug = _dbg;
         return info;
       }
       const cd = await cr.json();
@@ -167,18 +204,16 @@ export default async function handler(req, res) {
     const clientPageId = req.query.client_page_id || process.env.CLIENT_PAGE_ID || '';
     let clientInfo = { nome: '', foto_url: '', arroba: '' };
 
-    // Busca info do cliente se ID explícito fornecido
     if (clientPageId) {
       clientInfo = await fetchClientInfo(clientPageId, debug);
     }
 
-    // Filtros
     const statusFilter = {
       or: [
-        { property: 'LINHA DE PRODUÇÃO', status: { equals: 'APROVADO' } },
-        { property: 'LINHA DE PRODUÇÃO', status: { equals: 'AGENDADO' } },
-        { property: 'LINHA DE PRODUÇÃO', status: { equals: 'ENTREGUE' } }
-      ]
+        { property: 'LINHA DE PRODUÇÃO', status: { equals: 'APROVADO'  } },
+        { property: 'LINHA DE PRODUÇÃO', status: { equals: 'AGENDADO'  } },
+        { property: 'LINHA DE PRODUÇÃO', status: { equals: 'ENTREGUE'  } },
+      ],
     };
     const previewFilter = { property: 'PREVIEW FEED', url: { is_not_empty: true } };
 
@@ -194,19 +229,19 @@ export default async function handler(req, res) {
     }
 
     const body = {
-      sorts: [{ property: 'ENTREGA CLIENTE', direction: 'descending' }],
-      page_size: debug ? 20 : 100
+      sorts:     [{ property: 'ENTREGA CLIENTE', direction: 'descending' }],
+      page_size: debug ? 20 : 100,
     };
     if (filter) body.filter = filter;
 
     const r = await fetch(`https://api.notion.com/v1/databases/${DATABASE_ID}/query`, {
-      method: 'POST',
+      method:  'POST',
       headers: {
-        'Authorization': `Bearer ${NOTION_TOKEN}`,
+        Authorization:    `Bearer ${NOTION_TOKEN}`,
         'Notion-Version': '2022-06-28',
-        'Content-Type': 'application/json'
+        'Content-Type':   'application/json',
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
     });
 
     const data = await r.json();
@@ -214,29 +249,28 @@ export default async function handler(req, res) {
 
     const results = data.results;
 
-    // Resolver pastas em paralelo (sem bloquear a fila)
+    // Resolve pastas em paralelo
     const folderResolved = await Promise.all(
       results.map(page => {
-        const rawUrl  = page.properties['PREVIEW FEED']?.url || '';
+        const rawUrl   = page.properties['PREVIEW FEED']?.url || '';
         const folderId = driveFolderId(rawUrl);
         return folderId ? resolveFolderToFileId(folderId) : Promise.resolve(null);
       })
     );
 
     const rawPosts = results.map((page, idx) => {
-      const p        = page.properties;
-      const rawUrl   = p['PREVIEW FEED']?.url || '';
-      const status   = p['LINHA DE PRODUÇÃO']?.status?.name || '';
+      const p      = page.properties;
+      const rawUrl = p['PREVIEW FEED']?.url || '';
+      const status = p['LINHA DE PRODUÇÃO']?.status?.name || '';
       const folderId = driveFolderId(rawUrl);
       const hasValid = isValidPreviewUrl(rawUrl);
 
-      let image_url = '';
-      let embed_url = '';
-      let folder_ok = null;
+      let image_url  = '';
+      let embed_url  = '';
+      let folder_ok  = null;
 
       if (hasValid) {
         if (folderId) {
-          // Link de pasta → usa arquivo resolvido
           const resolved = folderResolved[idx];
           if (resolved) {
             image_url = `https://drive.google.com/thumbnail?id=${resolved.id}&sz=w640`;
@@ -261,11 +295,11 @@ export default async function handler(req, res) {
         data_entrega:   p['ENTREGA CLIENTE']?.date?.start || '',
         linha_producao: status,
         formato:        p['Formato']?.select?.name || '',
-        pilar:          p['PILAR']?.select?.name   || '',
+        pilar:          p['PILAR']?.select?.name || '',
         image_url,
         embed_url,
         folder_url: (folderId && !image_url) ? rawUrl : '',
-        images: image_url ? [image_url] : []
+        images:     image_url ? [image_url] : [],
       };
 
       if (debug) {
@@ -276,8 +310,8 @@ export default async function handler(req, res) {
           status_ok:         ['APROVADO', 'AGENDADO', 'ENTREGUE'].includes(status),
           image_url_result:  image_url || '(vazio — não aparecerá no grid)',
           tip: folderId && !folder_ok
-            ? 'Pasta não resolvida: verifique se ela está com acesso "Qualquer pessoa com o link" e se GOOGLE_API_KEY está configurada no Vercel'
-            : null
+            ? 'Pasta não resolvida: verifique se ela está compartilhada com a Service Account'
+            : null,
         };
       }
 
@@ -286,8 +320,6 @@ export default async function handler(req, res) {
 
     const posts = debug ? rawPosts : rawPosts.filter(p => p.image_url || p.folder_url);
 
-    // Auto-detect cliente: se não veio client_page_id mas posts existem,
-    // pega o cliente da relação do primeiro post automaticamente
     let autoDetectedId = null;
     if (!clientPageId && posts.length > 0) {
       autoDetectedId = results[0]?.properties['CLIENTES SW']?.relation?.[0]?.id;
@@ -301,13 +333,14 @@ export default async function handler(req, res) {
       shown:      posts.length,
       updated_at: new Date().toISOString(),
       ...(debug ? {
-        _debug_mode: true,
-        _google_key: process.env.GOOGLE_SERVICE_ACCOUNT_JSON ? 'service-account ✓' : (GOOGLE_KEY ? 'api-key ✓' : 'NÃO configurada (usando fallback HTML)'),
+        _debug_mode:          true,
+        _google_key:          process.env.GOOGLE_SERVICE_ACCOUNT_JSON
+          ? 'service-account ✓'
+          : (GOOGLE_KEY ? 'api-key ✓' : 'NÃO configurada (usando fallback HTML)'),
         _client_page_id_used: clientPageId || autoDetectedId || '(nenhum)',
-        _hint: 'Use ?debug=1 para diagnóstico. Use ?debug=1&client_page_id=ID para filtrar por cliente.'
-      } : {})
+        _hint: 'Use ?debug=TOKEN para diagnóstico interno.',
+      } : {}),
     });
-
   } catch (error) {
     return res.status(500).json({ error: 'Erro interno', message: error.message });
   }

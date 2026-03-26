@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   const GOOGLE_KEY  = process.env.GOOGLE_API_KEY || '';
 
   // Debug mode: requer token secreto definido como GRID_DEBUG_TOKEN no Vercel
-  // Fallback para '1' apenas se GRID_DEBUG_TOKEN não estiver configurado (retrocompatibilidade)
+  // Fallback para '1' apenas se GRID_DEBUG_TOKEN nÃ£o estiver configurado (retrocompatibilidade)
   const DEBUG_TOKEN = process.env.GRID_DEBUG_TOKEN || '';
   const debug = DEBUG_TOKEN
     ? (req.query.debug === DEBUG_TOKEN)
@@ -17,7 +17,7 @@ export default async function handler(req, res) {
 
   if (!NOTION_TOKEN) return res.status(500).json({ error: 'NOTION_TOKEN nao configurado' });
 
-  // ── helpers ────────────────────────────────────────────────────────────────
+  // ââ helpers ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
   function driveFileId(url) {
     if (!url) return null;
@@ -39,7 +39,7 @@ export default async function handler(req, res) {
   }
 
   // Converte Buffer do Node.js para ArrayBuffer correto (sem o pool offset)
-  // Buffer.from().buffer retorna o pool inteiro — é preciso fatiar o trecho correto
+  // Buffer.from().buffer retorna o pool inteiro â Ã© preciso fatiar o trecho correto
   function bufToArrayBuffer(buf) {
     return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
   }
@@ -74,7 +74,7 @@ export default async function handler(req, res) {
         ['sign']
       );
 
-      // FIX: mesma correção para os dados a assinar
+      // FIX: mesma correÃ§Ã£o para os dados a assinar
       const unsignedBuf = Buffer.from(unsigned);
       const sigBuf = await globalThis.crypto.subtle.sign(
         'RSASSA-PKCS1-v1_5',
@@ -101,14 +101,14 @@ export default async function handler(req, res) {
     }
   }
 
-  // Resolve pasta → ID do arquivo mais recente
-  // Estratégia 1: Service Account (pastas privadas — email da SA adicionado como membro)
-  // Estratégia 2: API Key simples (pastas públicas)
-  // Estratégia 3: parse do HTML embed do Drive (fallback sem chave)
+  // Resolve pasta â ID do arquivo mais recente
+  // EstratÃ©gia 1: Service Account (pastas privadas â email da SA adicionado como membro)
+  // EstratÃ©gia 2: API Key simples (pastas pÃºblicas)
+  // EstratÃ©gia 3: parse do HTML embed do Drive (fallback sem chave)
   async function resolveFolderToFileId(folderId) {
     const SA_JSON = process.env.GOOGLE_SERVICE_ACCOUNT_JSON || '';
 
-    // Estratégia 1 — Service Account
+    // EstratÃ©gia 1 â Service Account
     if (SA_JSON) {
       const token = await getServiceAccountToken(SA_JSON);
       if (token) {
@@ -126,7 +126,7 @@ export default async function handler(req, res) {
       }
     }
 
-    // Estratégia 2 — API Key (só para pastas públicas)
+    // EstratÃ©gia 2 â API Key (sÃ³ para pastas pÃºblicas)
     if (GOOGLE_KEY) {
       try {
         const q = encodeURIComponent(`'${folderId}' in parents and trashed = false`);
@@ -140,7 +140,7 @@ export default async function handler(req, res) {
       } catch (_) { /* continua */ }
     }
 
-    // Estratégia 3 — parse do HTML embed (sem chave, só para pastas públicas)
+    // EstratÃ©gia 3 â parse do HTML embed (sem chave, sÃ³ para pastas pÃºblicas)
     try {
       const r = await fetch(
         `https://drive.google.com/embeddedfolderview?id=${folderId}#list`,
@@ -161,9 +161,9 @@ export default async function handler(req, res) {
     return null;
   }
 
-  // ── main ─────────────────────────────────────────────────────────────────
+  // ââ main âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
-  // Busca info do cliente pelo ID de página (CLIENTES STUDIO W)
+  // Busca info do cliente pelo ID de pÃ¡gina (CLIENTES STUDIO W)
   async function fetchClientInfo(pageId, debugMode = false) {
     const info = { nome: '', foto_url: '', arroba: '' };
     let _dbg = {};
@@ -210,9 +210,9 @@ export default async function handler(req, res) {
 
     const statusFilter = {
       or: [
-        { property: 'LINHA DE PRODUÇÃO', status: { equals: 'APROVADO'  } },
-        { property: 'LINHA DE PRODUÇÃO', status: { equals: 'AGENDADO'  } },
-        { property: 'LINHA DE PRODUÇÃO', status: { equals: 'ENTREGUE'  } },
+        { property: 'LINHA DE PRODUÃÃO', status: { equals: 'APROVADO'  } },
+        { property: 'LINHA DE PRODUÃÃO', status: { equals: 'AGENDADO'  } },
+        { property: 'LINHA DE PRODUÃÃO', status: { equals: 'ENTREGUE'  } },
       ],
     };
     const previewFilter = { property: 'PREVIEW FEED', url: { is_not_empty: true } };
@@ -261,7 +261,7 @@ export default async function handler(req, res) {
     const rawPosts = results.map((page, idx) => {
       const p      = page.properties;
       const rawUrl = p['PREVIEW FEED']?.url || '';
-      const status = p['LINHA DE PRODUÇÃO']?.status?.name || '';
+      const status = p['LINHA DE PRODUÃÃO']?.status?.name || '';
       const folderId = driveFolderId(rawUrl);
       const hasValid = isValidPreviewUrl(rawUrl);
 
@@ -273,14 +273,14 @@ export default async function handler(req, res) {
         if (folderId) {
           const resolved = folderResolved[idx];
           if (resolved) {
-            image_url = `https://drive.google.com/thumbnail?id=${resolved.id}&sz=w640`;
+            image_url = `/api/thumb?id=${resolved.id}`;
             embed_url = `https://drive.google.com/file/d/${resolved.id}/preview`;
             folder_ok = resolved.via;
           }
         } else {
           const fileId = driveFileId(rawUrl);
           if (fileId) {
-            image_url = `https://drive.google.com/thumbnail?id=${fileId}&sz=w640`;
+            image_url = `/api/thumb?id=${fileId}`;
             embed_url = `https://drive.google.com/file/d/${fileId}/preview`;
           } else {
             image_url = rawUrl;
@@ -308,9 +308,9 @@ export default async function handler(req, res) {
           is_folder:         !!folderId,
           folder_resolved:   folder_ok,
           status_ok:         ['APROVADO', 'AGENDADO', 'ENTREGUE'].includes(status),
-          image_url_result:  image_url || '(vazio — não aparecerá no grid)',
+          image_url_result:  image_url || '(vazio â nÃ£o aparecerÃ¡ no grid)',
           tip: folderId && !folder_ok
-            ? 'Pasta não resolvida: verifique se ela está compartilhada com a Service Account'
+            ? 'Pasta nÃ£o resolvida: verifique se ela estÃ¡ compartilhada com a Service Account'
             : null,
         };
       }
@@ -335,10 +335,10 @@ export default async function handler(req, res) {
       ...(debug ? {
         _debug_mode:          true,
         _google_key:          process.env.GOOGLE_SERVICE_ACCOUNT_JSON
-          ? 'service-account ✓'
-          : (GOOGLE_KEY ? 'api-key ✓' : 'NÃO configurada (usando fallback HTML)'),
+          ? 'service-account â'
+          : (GOOGLE_KEY ? 'api-key â' : 'NÃO configurada (usando fallback HTML)'),
         _client_page_id_used: clientPageId || autoDetectedId || '(nenhum)',
-        _hint: 'Use ?debug=TOKEN para diagnóstico interno.',
+        _hint: 'Use ?debug=TOKEN para diagnÃ³stico interno.',
       } : {}),
     });
   } catch (error) {

@@ -47,6 +47,15 @@ async function getSAToken(saJson) {
   return tokenData.access_token || null;
 }
 
+function placeholderSvg(label) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640">
+  <rect width="640" height="640" fill="#1a1a1a"/>
+  <text x="320" y="300" font-family="sans-serif" font-size="48" fill="#555" text-anchor="middle">${label}</text>
+  <text x="320" y="360" font-family="sans-serif" font-size="28" fill="#444" text-anchor="middle">preview</text>
+</svg>`;
+  return Buffer.from(svg);
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET');
@@ -58,55 +67,82 @@ export default async function handler(req, res) {
 
   const SA_JSON = process.env.GOOGLE_SERVICE_ACCOUNT_JSON || '';
   if (!SA_JSON) {
-    return res.redirect(302, `https://drive.google.com/thumbnail?id=${id}&sz=w640`);
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    return res.send(placeholderSvg('no SA'));
   }
 
   const token = await getSAToken(SA_JSON);
   if (!token) {
-    return res.redirect(302, `https://drive.google.com/thumbnail?id=${id}&sz=w640`);
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    return res.send(placeholderSvg('auth error'));
   }
 
   const authHeaders = { Authorization: `Bearer ${token}` };
 
   try {
-    // Try thumbnailLink from Drive API metadata
+    // Step 1: get mimeType
     const metaRes = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${id}?fields=thumbnailLink%2CmimeType`,
+      `https://www.googleapis.com/drive/v3/files/${id}?fields=mimeType%2Cname`,
       { headers: authHeaders }
     );
 
-    if (metaRes.ok) {
-      const meta = await metaRes.json();
+    if (!metaRes.ok) {
+      res.setHeader('Content-Type', 'image/svg+xml');
+      res.setHeader('Cache-Control', 'public, max-age=60');
+      return res.send(placeholderSvg('not found'));
+    }
 
-      if (meta.thumbnailLink) {
-        const thumbUrl = meta.thumbnailLink.replace(/=s\d+/, '=s640');
-        const thumbRes = await fetch(thumbUrl, { headers: authHeaders });
-        if (thumbRes.ok) {
-          const ct = thumbRes.headers.get('content-type') || 'image/jpeg';
-          res.setHeader('Content-Type', ct);
-          res.setHeader('Cache-Control', 'public, max-age=3600');
-          const buf = await thumbRes.arrayBuffer();
-          return res.send(Buffer.from(buf));
-        }
-      }
+    const meta = await metaRes.json();
+    const mime = meta.mimeType || '';
 
-      // Fallback: direct download for image files
-      if (meta.mimeType && meta.mimeType.startsWith('image/')) {
-        const imgRes = await fetch(
-          `https://www.googleapis.com/drive/v3/files/${id}?alt=media`,
-          { headers: authHeaders }
-        );
-        if (imgRes.ok) {
-          res.setHeader('Content-Type', meta.mimeType);
-          res.setHeader('Cache-Control', 'public, max-age=3600');
-          const buf = await imgRes.arrayBuffer();
-          return res.send(Buffer.from(buf));
-        }
+    // Step 2: for images, download directly via alt=media
+    if (mime.startsWith('image/')) {
+      const imgRes = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${id}?alt=media`,
+        { headers: authHeaders }
+      );
+      if (imgRes.ok) {
+        res.setHeader('Content-Type', mime);
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+        const buf = await imgRes.arrayBuffer();
+        return res.send(Buffer.from(buf));
       }
     }
+
+    // Step 3: for video, try to get a thumbnail via thumbnailLink fetch with SA token
+    if (mime.startsWith('video/')) {
+      const thumbMetaRes = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${id}?fields=thumbnailLink`,
+        { headers: authHeaders }
+      );
+      if (thumbMetaRes.ok) {
+        const thumbMeta = await thumbMetaRes.json();
+        if (thumbMeta.thumbnailLink) {
+          const thumbUrl = thumbMeta.thumbnailLink.replace(/=[swh]\d+/, '=w640');
+          const tRes = await fetch(thumbUrl, { headers: authHeaders });
+          if (tRes.ok) {
+            const ct = tRes.headers.get('content-type') || 'image/jpeg';
+            res.setHeader('Content-Type', ct);
+            res.setHeader('Cache-Control', 'public, max-age=3600');
+            const buf = await tRes.arrayBuffer();
+            return res.send(Buffer.from(buf));
+          }
+        }
+      }
+      // Video fallback placeholder
+      res.setHeader('Content-Type', 'image/svg+xml');
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      return res.send(placeholderSvg('VIDEO'));
+    }
+
   } catch(e) {
-    // fall through to redirect
+    // fall through to placeholder
   }
 
-  return res.redirect(302, `https://drive.google.com/thumbnail?id=${id}&sz=w640`);
+  // Generic placeholder for unknown types
+  res.setHeader('Content-Type', 'image/svg+xml');
+  res.setHeader('Cache-Control', 'public, max-age=60');
+  return res.send(placeholderSvg('preview'));
 }

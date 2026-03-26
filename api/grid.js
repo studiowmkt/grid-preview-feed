@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   const GOOGLE_KEY  = process.env.GOOGLE_API_KEY || '';
 
   // Debug mode: requer token secreto definido como GRID_DEBUG_TOKEN no Vercel
-  // Fallback para '1' apenas se GRID_DEBUG_TOKEN nÃÂ£o estiver configurado (retrocompatibilidade)
+  // Fallback para '1' apenas se GRID_DEBUG_TOKEN nÃÂÃÂ£o estiver configurado (retrocompatibilidade)
   const DEBUG_TOKEN = process.env.GRID_DEBUG_TOKEN || '';
   const debug = DEBUG_TOKEN
     ? (req.query.debug === DEBUG_TOKEN)
@@ -17,7 +17,7 @@ export default async function handler(req, res) {
 
   if (!NOTION_TOKEN) return res.status(500).json({ error: 'NOTION_TOKEN nao configurado' });
 
-  // Ã¢ÂÂÃ¢ÂÂ helpers Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+  // ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ helpers ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ
 
   function driveFileId(url) {
     if (!url) return null;
@@ -39,7 +39,7 @@ export default async function handler(req, res) {
   }
 
   // Converte Buffer do Node.js para ArrayBuffer correto (sem o pool offset)
-  // Buffer.from().buffer retorna o pool inteiro Ã¢ÂÂ ÃÂ© preciso fatiar o trecho correto
+  // Buffer.from().buffer retorna o pool inteiro ÃÂ¢ÃÂÃÂ ÃÂÃÂ© preciso fatiar o trecho correto
   function bufToArrayBuffer(buf) {
     return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
   }
@@ -74,7 +74,7 @@ export default async function handler(req, res) {
         ['sign']
       );
 
-      // FIX: mesma correÃÂ§ÃÂ£o para os dados a assinar
+      // FIX: mesma correÃÂÃÂ§ÃÂÃÂ£o para os dados a assinar
       const unsignedBuf = Buffer.from(unsigned);
       const sigBuf = await globalThis.crypto.subtle.sign(
         'RSASSA-PKCS1-v1_5',
@@ -101,14 +101,14 @@ export default async function handler(req, res) {
     }
   }
 
-  // Resolve pasta Ã¢ÂÂ ID do arquivo mais recente
-  // EstratÃÂ©gia 1: Service Account (pastas privadas Ã¢ÂÂ email da SA adicionado como membro)
-  // EstratÃÂ©gia 2: API Key simples (pastas pÃÂºblicas)
-  // EstratÃÂ©gia 3: parse do HTML embed do Drive (fallback sem chave)
+  // Resolve pasta ÃÂ¢ÃÂÃÂ ID do arquivo mais recente
+  // EstratÃÂÃÂ©gia 1: Service Account (pastas privadas ÃÂ¢ÃÂÃÂ email da SA adicionado como membro)
+  // EstratÃÂÃÂ©gia 2: API Key simples (pastas pÃÂÃÂºblicas)
+  // EstratÃÂÃÂ©gia 3: parse do HTML embed do Drive (fallback sem chave)
   async function resolveFolderToFileId(folderId) {
     const SA_JSON = process.env.GOOGLE_SERVICE_ACCOUNT_JSON || '';
 
-    // EstratÃÂ©gia 1 Ã¢ÂÂ Service Account
+    // EstratÃÂÃÂ©gia 1 ÃÂ¢ÃÂÃÂ Service Account
     if (SA_JSON) {
       const token = await getServiceAccountToken(SA_JSON);
       if (token) {
@@ -120,13 +120,13 @@ export default async function handler(req, res) {
           );
           if (r.ok) {
             const d = await r.json();
-            if (d.files?.length > 0) const best_sa = d.files.find(f=>f.mimeType&&f.mimeType.startsWith('image/')) || d.files[0]; return { id: best_sa.id, via: 'sa' };
+            if (d.files?.length > 0) return { id: (d.files.find(f => f.mimeType && f.mimeType.startsWith('image/')) || d.files[0]).id, via: 'sa' };
           }
         } catch (_) { /* continua */ }
       }
     }
 
-    // EstratÃÂ©gia 2 Ã¢ÂÂ API Key (sÃÂ³ para pastas pÃÂºblicas)
+    // EstratÃÂÃÂ©gia 2 ÃÂ¢ÃÂÃÂ API Key (sÃÂÃÂ³ para pastas pÃÂÃÂºblicas)
     if (GOOGLE_KEY) {
       try {
         const q = encodeURIComponent(`'${folderId}' in parents and trashed = false`);
@@ -135,12 +135,12 @@ export default async function handler(req, res) {
         );
         if (r.ok) {
           const d = await r.json();
-          if (d.files?.length > 0) const best_api = d.files.find(f=>f.mimeType&&f.mimeType.startsWith('image/')) || d.files[0]; return { id: best_api.id, via: 'api' };
+          if (d.files?.length > 0) return { id: (d.files.find(f => f.mimeType && f.mimeType.startsWith('image/')) || d.files[0]).id, via: 'api' };
         }
       } catch (_) { /* continua */ }
     }
 
-    // EstratÃÂ©gia 3 Ã¢ÂÂ parse do HTML embed (sem chave, sÃÂ³ para pastas pÃÂºblicas)
+    // EstratÃÂÃÂ©gia 3 ÃÂ¢ÃÂÃÂ parse do HTML embed (sem chave, sÃÂÃÂ³ para pastas pÃÂÃÂºblicas)
     try {
       const r = await fetch(
         `https://drive.google.com/embeddedfolderview?id=${folderId}#list`,
@@ -161,9 +161,9 @@ export default async function handler(req, res) {
     return null;
   }
 
-  // Ã¢ÂÂÃ¢ÂÂ main Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+  // ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ main ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ
 
-  // Busca info do cliente pelo ID de pÃÂ¡gina (CLIENTES STUDIO W)
+  // Busca info do cliente pelo ID de pÃÂÃÂ¡gina (CLIENTES STUDIO W)
   async function fetchClientInfo(pageId, debugMode = false) {
     const info = { nome: '', foto_url: '', arroba: '' };
     let _dbg = {};
@@ -210,9 +210,9 @@ export default async function handler(req, res) {
 
     const statusFilter = {
       or: [
-        { property: 'LINHA DE PRODUÃÂÃÂO', status: { equals: 'APROVADO'  } },
-        { property: 'LINHA DE PRODUÃÂÃÂO', status: { equals: 'AGENDADO'  } },
-        { property: 'LINHA DE PRODUÃÂÃÂO', status: { equals: 'ENTREGUE'  } },
+        { property: 'LINHA DE PRODUÃÂÃÂÃÂÃÂO', status: { equals: 'APROVADO'  } },
+        { property: 'LINHA DE PRODUÃÂÃÂÃÂÃÂO', status: { equals: 'AGENDADO'  } },
+        { property: 'LINHA DE PRODUÃÂÃÂÃÂÃÂO', status: { equals: 'ENTREGUE'  } },
       ],
     };
     const previewFilter = { property: 'PREVIEW FEED', url: { is_not_empty: true } };
@@ -261,7 +261,7 @@ export default async function handler(req, res) {
     const rawPosts = results.map((page, idx) => {
       const p      = page.properties;
       const rawUrl = p['PREVIEW FEED']?.url || '';
-      const status = p['LINHA DE PRODUÃÂÃÂO']?.status?.name || '';
+      const status = p['LINHA DE PRODUÃÂÃÂÃÂÃÂO']?.status?.name || '';
       const folderId = driveFolderId(rawUrl);
       const hasValid = isValidPreviewUrl(rawUrl);
 
@@ -308,9 +308,9 @@ export default async function handler(req, res) {
           is_folder:         !!folderId,
           folder_resolved:   folder_ok,
           status_ok:         ['APROVADO', 'AGENDADO', 'ENTREGUE'].includes(status),
-          image_url_result:  image_url || '(vazio Ã¢ÂÂ nÃÂ£o aparecerÃÂ¡ no grid)',
+          image_url_result:  image_url || '(vazio ÃÂ¢ÃÂÃÂ nÃÂÃÂ£o aparecerÃÂÃÂ¡ no grid)',
           tip: folderId && !folder_ok
-            ? 'Pasta nÃÂ£o resolvida: verifique se ela estÃÂ¡ compartilhada com a Service Account'
+            ? 'Pasta nÃÂÃÂ£o resolvida: verifique se ela estÃÂÃÂ¡ compartilhada com a Service Account'
             : null,
         };
       }
@@ -335,10 +335,10 @@ export default async function handler(req, res) {
       ...(debug ? {
         _debug_mode:          true,
         _google_key:          process.env.GOOGLE_SERVICE_ACCOUNT_JSON
-          ? 'service-account Ã¢ÂÂ'
-          : (GOOGLE_KEY ? 'api-key Ã¢ÂÂ' : 'NÃÂO configurada (usando fallback HTML)'),
+          ? 'service-account ÃÂ¢ÃÂÃÂ'
+          : (GOOGLE_KEY ? 'api-key ÃÂ¢ÃÂÃÂ' : 'NÃÂÃÂO configurada (usando fallback HTML)'),
         _client_page_id_used: clientPageId || autoDetectedId || '(nenhum)',
-        _hint: 'Use ?debug=TOKEN para diagnÃÂ³stico interno.',
+        _hint: 'Use ?debug=TOKEN para diagnÃÂÃÂ³stico interno.',
       } : {}),
     });
   } catch (error) {

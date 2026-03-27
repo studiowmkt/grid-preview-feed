@@ -210,9 +210,9 @@ export default async function handler(req, res) {
 
     const statusFilter = {
       or: [
-        { property: 'LINHA DE PRODUÃÂÃÂÃÂÃÂO', status: { equals: 'APROVADO'  } },
-        { property: 'LINHA DE PRODUÃÂÃÂÃÂÃÂO', status: { equals: 'AGENDADO'  } },
-        { property: 'LINHA DE PRODUÃÂÃÂÃÂÃÂO', status: { equals: 'ENTREGUE'  } },
+        { property: 'LINHA DE PRODUÇÃO', status: { equals: 'APROVADO'  } },
+        { property: 'LINHA DE PRODUÇÃO', status: { equals: 'AGENDADO'  } },
+        { property: 'LINHA DE PRODUÇÃO', status: { equals: 'ENTREGUE'  } },
       ],
     };
     const previewFilter = { property: 'PREVIEW FEED', url: { is_not_empty: true } };
@@ -261,7 +261,7 @@ export default async function handler(req, res) {
     const rawPosts = results.map((page, idx) => {
       const p      = page.properties;
       const rawUrl = p['PREVIEW FEED']?.url || '';
-      const status = p['LINHA DE PRODUÃÂÃÂÃÂÃÂO']?.status?.name || '';
+      const status = p['LINHA DE PRODUÇÃO']?.status?.name || '';
       const folderId = driveFolderId(rawUrl);
       const hasValid = isValidPreviewUrl(rawUrl);
 

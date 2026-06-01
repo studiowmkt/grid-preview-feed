@@ -283,7 +283,7 @@ export default async function handler(req, res) {
             image_url = `/api/thumb?id=${fileId}`;
             embed_url = `https://drive.google.com/file/d/${fileId}/preview`;
           } else {
-            image_url = rawUrl;
+            embed_url = rawUrl;
           }
         }
       }

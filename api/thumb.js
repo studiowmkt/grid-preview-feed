@@ -60,7 +60,31 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET');
 
-  const { id } = req.query;
+  const { id, ig } = req.query;
+
+  // Instagram thumbnail proxy
+  if (ig) {
+    try {
+      const oembedUrl = 'https://www.instagram.com/oembed?url=' + encodeURIComponent(ig);
+      const oeR = await fetch(oembedUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; StudioW/1.0)', 'Accept': 'application/json' }
+      });
+      if (!oeR.ok) throw new Error('oembed ' + oeR.status);
+      const oeData = await oeR.json();
+      const thumbUrl = oeData.thumbnail_url;
+      if (!thumbUrl) throw new Error('no thumbnail_url');
+      const imgR = await fetch(thumbUrl);
+      if (!imgR.ok) throw new Error('img ' + imgR.status);
+      const buf = await imgR.arrayBuffer();
+      const ct = imgR.headers.get('content-type') || 'image/jpeg';
+      res.setHeader('Content-Type', ct);
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      return res.status(200).send(Buffer.from(buf));
+    } catch (e) {
+      return res.status(200).send(placeholderSvg('IG'));
+    }
+  }
+
   if (!id || !/^[a-zA-Z0-9_-]+$/.test(id)) {
     return res.status(400).json({ error: 'Invalid file ID' });
   }

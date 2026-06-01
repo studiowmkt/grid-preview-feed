@@ -76,7 +76,8 @@ export default async function handler(req, res) {
       const imgR = await fetch(thumbUrl);
       if (!imgR.ok) throw new Error('img ' + imgR.status);
       const buf = await imgR.arrayBuffer();
-      const ct = imgR.headers.get('content-type') || 'image/jpeg';
+      // Instagram CDN may return application/octet-stream  force image/jpeg
+      const ct = 'image/jpeg';
       res.setHeader('Content-Type', ct);
       res.setHeader('Cache-Control', 'public, max-age=3600');
       return res.status(200).send(Buffer.from(buf));
